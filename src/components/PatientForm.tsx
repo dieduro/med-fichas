@@ -78,7 +78,7 @@ const PatientForm: React.FC<{patientId: string | undefined}> = ({patientId}) => 
             <div className="space-y-2">
               <Label htmlFor="name">Nombre</Label>
               <Input
-                defaultValue={patient?.name || ""}
+                defaultValue={patient?.full_name || ""}
                 id="name"
                 name="name"
                 placeholder="Nombre del paciente"
@@ -108,12 +108,7 @@ const PatientForm: React.FC<{patientId: string | undefined}> = ({patientId}) => 
             </div>
             <div className="space-y-2">
               <Label htmlFor="dob">Fecha de nacimiento</Label>
-              <Input
-                defaultValue={patient?.dateOfBirth || ""}
-                id="dob"
-                name="dateOfBirth"
-                type="date"
-              />
+              <Input defaultValue={patient?.dob || ""} id="dob" name="dateOfBirth" type="date" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
