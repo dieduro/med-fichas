@@ -22,7 +22,10 @@
     "react-dom": "19.0.0-rc-4c2e457c7c-20240522",
     "tailwind-merge": "^2.3.0",
     "tailwindcss": "^3.4.3",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "uuid": "^10.0.0",
+    "@supabase/ssr": "latest",
+    "@supabase/supabase-js": "latest"
   },
   "devDependencies": {
     "@eslint/compat": "^1.0.1",
@@ -30,6 +33,7 @@
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/uuid": "^10.0.0",
     "@vercel/style-guide": "^6.0.0",
     "babel-plugin-react-compiler": "0.0.0-experimental-592953e-20240517",
     "eslint": "^9.3.0",
