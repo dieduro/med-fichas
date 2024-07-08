@@ -11,8 +11,6 @@ const PatientsList: React.FC<{searchValue: string; patients: Patient[]}> = ({
   searchValue = "",
   patients,
 }) => {
-  console.log(patients);
-
   return (
     <div className="space-y-6">
       <div>
