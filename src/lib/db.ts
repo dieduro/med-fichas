@@ -16,10 +16,7 @@ export const api = {
       .order("created_at", {ascending: false})
       .limit(25);
 
-    if (error) {
-      console.log(888, error);
-      throw error;
-    }
+    if (error) throw error;
 
     return data;
   },
