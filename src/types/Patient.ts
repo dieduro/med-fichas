@@ -4,7 +4,7 @@ export interface Patient {
   age?: number;
   lastVisit?: string;
   email: string;
-  phone: string;
+  phone_number: string;
   gender: string;
   dob: string;
   notes: string;

@@ -3,7 +3,6 @@ import {Patient} from "@/types/Patient";
 const STORAGE_KEY = "offlinePatients";
 
 export const savePatientLocally = (patient: Patient): void => {
-  console.log("Saving patient to local storage:", patient);
   try {
     const patients = getLocalPatients();
 
@@ -17,7 +16,6 @@ export const savePatientLocally = (patient: Patient): void => {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPatients));
   } catch (error) {
-    console.error("Error saving patient to local storage:", error);
     throw new Error("Failed to save patient locally");
   }
 };

@@ -12,6 +12,8 @@
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-slot": "^1.0.2",
+    "@supabase/ssr": "latest",
+    "@supabase/supabase-js": "latest",
     "autoprefixer": "^10.4.19",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -20,12 +22,11 @@
     "postcss": "^8.4.38",
     "react": "19.0.0-rc-4c2e457c7c-20240522",
     "react-dom": "19.0.0-rc-4c2e457c7c-20240522",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^2.3.0",
     "tailwindcss": "^3.4.3",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^10.0.0",
-    "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "latest"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1.0.1",

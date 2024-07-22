@@ -6,7 +6,6 @@ import {useRouter} from "next/navigation";
 
 import {clearLocalPatients} from "../lib/localStorageService";
 
-import NextAppointments from "./NextAppointments";
 import PatientsList from "./PatientsList";
 import PackageIcon from "./svg/Package";
 import SearchIcon from "./svg/Search";
@@ -51,7 +50,6 @@ const Dashboard: React.FC<{patients: Patient[]}> = ({patients}) => {
       </header>
       <main className="grid flex-1 grid-cols-1 gap-8 p-6 md:grid-cols-[1fr_300px]">
         <PatientsList patients={patients} searchValue={searchValue} />
-        <NextAppointments />
         <Button variant="destructive" onClick={clearLocalPatients}>
           Borrar pacientes
         </Button>

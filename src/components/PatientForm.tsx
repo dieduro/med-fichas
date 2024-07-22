@@ -1,10 +1,7 @@
 "use client";
 
-import {v4 as uuid} from "uuid";
 import React, {useState} from "react";
 import Link from "next/link";
-
-import {getLocalPatientById, savePatientLocally} from "../lib/localStorageService";
 
 import {
   Card,
@@ -26,44 +23,15 @@ import {
 import {Textarea} from "@/components/ui/textarea";
 import {Button, buttonVariants} from "@/components/ui/button";
 import {Patient} from "@/types/Patient";
+import {postClient} from "@/app/patient/[id]/actions";
 
-const calculateAge = (dob: string): number => {
-  const birthDate = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-
-  // Check if the birthday has occurred this year
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-
-  return age;
-};
-
-const PatientForm: React.FC<{patientId: string | undefined}> = ({patientId}) => {
-  const [patient, setPatient] = useState<Patient | undefined>(
-    patientId ? getLocalPatientById(patientId) : undefined,
-  );
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget; // Get the form element
-    const data = new FormData(form); // Create a FormData object
-
-    const age = calculateAge(data.get("dateOfBirth") as string);
-
-    const newPatient = {
-      id: !patientId || patientId === "new" ? uuid() : patientId,
-      age,
-      ...Object.fromEntries(data.entries()),
-    };
-
-    savePatientLocally(newPatient as Patient);
-  };
+const PatientForm: React.FC<{
+  patient: Patient | undefined;
+}> = ({patient}) => {
+  const [patientData, setPatientData] = useState<Patient | undefined>(patient);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPatient((prev) => ({...prev, [e.target.name]: e.target.value}) as Patient);
+    setPatientData((prev) => ({...prev, [e.target.name]: e.target.value}) as Patient);
   };
 
   return (
@@ -72,15 +40,15 @@ const PatientForm: React.FC<{patientId: string | undefined}> = ({patientId}) => 
         <CardTitle>Información del paciente</CardTitle>
         <CardDescription>Completar el formulario con la información del paciente</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form action={postClient}>
         <CardContent className="grid gap-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre</Label>
+              <Label htmlFor="full_name">Nombre</Label>
               <Input
-                defaultValue={patient?.full_name || ""}
-                id="name"
-                name="name"
+                defaultValue={patientData?.full_name || ""}
+                id="full_name"
+                name="full_name"
                 placeholder="Nombre del paciente"
                 onChange={handleChange}
               />
@@ -88,7 +56,7 @@ const PatientForm: React.FC<{patientId: string | undefined}> = ({patientId}) => 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
-                defaultValue={patient?.email || ""}
+                defaultValue={patientData?.email || ""}
                 id="email"
                 name="email"
                 placeholder="Email del paciente"
@@ -98,23 +66,23 @@ const PatientForm: React.FC<{patientId: string | undefined}> = ({patientId}) => 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono</Label>
+              <Label htmlFor="phone_number">Teléfono</Label>
               <Input
-                defaultValue={patient?.phone || ""}
-                id="phone"
-                name="phone"
+                defaultValue={patientData?.phone_number || ""}
+                id="phone_number"
+                name="phone_number"
                 placeholder="Teléfono del paciente"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="dob">Fecha de nacimiento</Label>
-              <Input defaultValue={patient?.dob || ""} id="dob" name="dateOfBirth" type="date" />
+              <Input defaultValue={patientData?.dob || ""} id="dob" name="dob" type="date" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="gender">Género</Label>
-              <Select defaultValue={patient?.gender || ""} name="gender">
+              <Select defaultValue={patientData?.gender || ""} name="gender">
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar género" />
                 </SelectTrigger>
@@ -130,7 +98,7 @@ const PatientForm: React.FC<{patientId: string | undefined}> = ({patientId}) => 
             <Label htmlFor="notes">Historia clínica</Label>
             <Textarea
               className="min-h-[200px]"
-              defaultValue={patient?.notes || ""}
+              defaultValue={patientData?.notes || ""}
               id="notes"
               name="notes"
               placeholder="Ingresar información clínica relevante"

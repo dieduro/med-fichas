@@ -1,11 +1,9 @@
 import Dashboard from "@/components/Dashboard";
+import {api} from "@/lib/db";
 import {Patient} from "@/types/Patient";
-import {createClient} from "@/utils/supabase/server";
 
 export default async function HomePage() {
-  const supabase = createClient();
-
-  const {data: patients} = await supabase.from("patients").select("*"); //.from("testTable").select("*").limit(10);
+  const patients = await api.getPatients();
 
   return <Dashboard patients={patients as Patient[]} />;
 }
