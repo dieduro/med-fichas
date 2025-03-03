@@ -24,11 +24,11 @@ const PatientRow: React.FC<PatientRowProps> = ({patient}) => {
     <TableRow className="cursor-pointer transition-colors" onClick={handleClick}>
       <TableCell>
         <Link className="block h-full w-full" href={href}>
-          {patient.name}
+          {patient.full_name}
         </Link>
       </TableCell>
       <TableCell>{patient.age}</TableCell>
-      <TableCell>{patient.lastVisit}</TableCell>
+      <TableCell>{patient.dob}</TableCell>
     </TableRow>
   );
 };

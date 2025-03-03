@@ -2,20 +2,28 @@
 
 import Link from "next/link";
 import React, {useState} from "react";
+import {useRouter} from "next/navigation";
 
-import NextAppointments from "./NextAppointments";
+import {clearLocalPatients} from "../lib/localStorageService";
+
 import PatientsList from "./PatientsList";
 import PackageIcon from "./svg/Package";
 import SearchIcon from "./svg/Search";
 
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
+import {Patient} from "@/types/Patient";
 
-const Dashboard: React.FC = () => {
+const Dashboard: React.FC<{patients: Patient[]}> = ({patients}) => {
   const [searchValue, setSearchValue] = useState("");
+  const router = useRouter();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);
+  };
+
+  const createNewPatient = () => {
+    router.push(`/patient/new`);
   };
 
   return (
@@ -37,15 +45,14 @@ const Dashboard: React.FC = () => {
           </form>
         </div>
         <div className="flex items-center gap-4">
-          <Button className="rounded-full" size="icon" variant="ghost">
-            <img alt="Avatar" className="rounded-full" height="32" src="/vercel.svg" width="32" />
-            <span className="sr-only">Toggle user menu</span>
-          </Button>
+          <Button onClick={createNewPatient}>Nuevo Paciente</Button>
         </div>
       </header>
       <main className="grid flex-1 grid-cols-1 gap-8 p-6 md:grid-cols-[1fr_300px]">
-        <PatientsList searchValue={searchValue} />
-        <NextAppointments />
+        <PatientsList patients={patients} searchValue={searchValue} />
+        <Button variant="destructive" onClick={clearLocalPatients}>
+          Borrar pacientes
+        </Button>
       </main>
     </div>
   );
