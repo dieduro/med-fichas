@@ -7,7 +7,12 @@ const getPatientById = async (id: string) => {
   return supabase.from("patients").select("*").eq("id", id).single();
 };
 
-export default async function Page({params}: {params: {id: string}}) {
+// Define the correct type for params in Next.js 15
+interface PageProps {
+  params: Promise<{id: string}>;
+}
+
+export default async function Page({params}: PageProps) {
   // In Next.js 15, params should be awaited before using its properties
   const resolvedParams = await params;
   const id = resolvedParams.id;
