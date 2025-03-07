@@ -1,19 +1,20 @@
 import "server-only";
-import {createServerClient, type CookieOptions} from "@supabase/ssr";
+import {createServerClient} from "@supabase/ssr";
 import {cookies} from "next/headers";
 
-const cookieStore = cookies();
+export const createClient = async () => {
+  // In Next.js 15, cookies() is an asynchronous function that should be awaited
+  const cookieStore = await cookies();
 
-export const createClient = () => {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
+        get(name) {
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set(name, value, options) {
           try {
             cookieStore.set({name, value, ...options});
           } catch (error) {
@@ -22,7 +23,7 @@ export const createClient = () => {
             // user sessions.
           }
         },
-        remove(name: string, options: CookieOptions) {
+        remove(name, options) {
           try {
             cookieStore.set({name, value: "", ...options});
           } catch (error) {

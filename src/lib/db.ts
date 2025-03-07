@@ -1,15 +1,26 @@
 // lib/api.js
-import {supabaseAdmin} from "./supabaseClient";
+import {getSupabaseAdmin} from "./supabaseClient";
 
 import {Patient} from "@/types/Patient";
 import {createClient} from "@/utils/supabase/client";
 // Function to determine if we're on the server or client
 const isServer = () => typeof window === "undefined";
-const supabase = createClient();
+
+// Since createClient from server is now async, we need to handle it differently
+// For client-side, we can still use the synchronous client
+const clientSideSupabase = typeof window !== "undefined" ? createClient() : null;
 
 export const api = {
   getPatients: async () => {
-    const client = isServer() ? supabaseAdmin : supabase;
+    let client;
+
+    if (isServer()) {
+      client = await getSupabaseAdmin();
+    } else {
+      // If we're on the client side but clientSideSupabase is null, create it
+      client = clientSideSupabase || createClient();
+    }
+
     const {data, error} = await client
       .from("patients")
       .select("*")
@@ -22,7 +33,15 @@ export const api = {
   },
   // User related queries
   getPatient: async (patientId: string) => {
-    const client = isServer() ? supabaseAdmin : supabase;
+    let client;
+
+    if (isServer()) {
+      client = await getSupabaseAdmin();
+    } else {
+      // If we're on the client side but clientSideSupabase is null, create it
+      client = clientSideSupabase || createClient();
+    }
+
     const {data, error} = await client.from("patients").select("*").eq("id", patientId).single();
 
     if (error) throw error;
@@ -31,7 +50,7 @@ export const api = {
   },
 
   createPatient: async (patient: Patient) => {
-    const client = supabaseAdmin || supabase;
+    const client = await getSupabaseAdmin();
     const {data, error} = await client.from("posts").insert(patient);
 
     if (error) throw error;

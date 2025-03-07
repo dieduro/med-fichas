@@ -29,7 +29,7 @@ const processFormData = (formData: FormData) => {
 };
 
 export async function postClient(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const parsedFormData = processFormData(formData);
   const age = calculateAge(formData.get("dob") as string);
