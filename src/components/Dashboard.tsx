@@ -3,7 +3,7 @@
 import Link from "next/link";
 import React, {useState} from "react";
 import {useRouter} from "next/navigation";
-import {Settings} from "lucide-react";
+import {Settings, Plus} from "lucide-react";
 
 import PatientsList from "./PatientsList";
 import PackageIcon from "./svg/Package";
@@ -49,11 +49,22 @@ const Dashboard: React.FC<{patients: Patient[]}> = ({patients}) => {
               <Settings className="h-5 w-5" />
             </Button>
           </Link>
-          <Button onClick={createNewPatient}>Nuevo Paciente</Button>
+          <Button className="hidden md:flex" onClick={createNewPatient}>
+            Nuevo Paciente
+          </Button>
         </div>
       </header>
-      <main className="grid flex-1 p-6">
+      <main className="relative grid flex-1 p-6">
         <PatientsList patients={patients} searchValue={searchValue} />
+
+        <Button
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full p-0 shadow-lg md:hidden"
+          size="icon"
+          onClick={createNewPatient}
+        >
+          <Plus className="h-6 w-6" />
+          <span className="sr-only">Nuevo Paciente</span>
+        </Button>
       </main>
     </div>
   );
