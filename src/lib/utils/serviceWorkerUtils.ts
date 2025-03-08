@@ -10,6 +10,15 @@ export const registerServiceWorker = async (): Promise<{
   success: boolean;
   error?: string;
 }> => {
+  // Early return if not in browser environment
+  if (typeof window === "undefined") {
+    return {
+      success: false,
+      error: "Not in browser environment",
+    };
+  }
+
+  // Check if service workers are supported
   if (!isServiceWorkerSupported()) {
     return {
       success: false,
@@ -17,27 +26,96 @@ export const registerServiceWorker = async (): Promise<{
     };
   }
 
+  // Check if we're in an incognito/private browsing mode
+  // In some browsers, service workers don't work properly in private browsing
   try {
-    const wb = new Workbox("/sw.js");
+    if ("storage" in navigator) {
+      const testValue = "test";
 
-    // Add event listeners for service worker updates
+      localStorage.setItem(testValue, testValue);
+      localStorage.removeItem(testValue);
+    }
+  } catch (e) {
+    return {
+      success: false,
+      error: "Service worker may not work in private browsing mode",
+    };
+  }
+
+  try {
+    // Create a timeout promise
+    const timeoutPromise = new Promise<{success: false; error: string}>((resolve) => {
+      setTimeout(() => {
+        resolve({
+          success: false,
+          error: "Service worker registration timed out",
+        });
+      }, 3000); // 3 second timeout
+    });
+
+    // Check if service worker is already registered
+    const registrationResult = await Promise.race([
+      navigator.serviceWorker.getRegistration(),
+      timeoutPromise,
+    ]);
+
+    // If we got a timeout or no existing registration
+    if (!registrationResult) {
+      console.log("No existing service worker found, registering new one");
+    } else if ("error" in registrationResult) {
+      console.warn("Service worker check timed out, proceeding with registration");
+    } else {
+      console.log("Service worker already registered:", registrationResult);
+
+      return {success: true};
+    }
+
+    // Create a new Workbox instance with optimized options
+    const wb = new Workbox("/sw.js", {
+      // Increase the registration timeout
+      registerOptions: {
+        timeout: 2000, // 2 seconds
+      },
+    });
+
+    // Add event listeners for service worker lifecycle events
     wb.addEventListener("installed", (event) => {
+      console.log("Service worker installed:", event.type, event.isUpdate ? "(update)" : "(new)");
       if (event.isUpdate) {
-        // If it's an update, show a notification to the user
-        if (
-          window.confirm("New version available! Click OK to refresh and use the latest version.")
-        ) {
-          window.location.reload();
-        }
+        // For updates, we'll use a less intrusive notification in the future
+        console.log("Service worker updated");
       }
     });
 
-    // Register the service worker
-    await wb.register();
+    // Register the service worker with a timeout
+    const registrationPromise = wb.register();
+    const registration = (await Promise.race([registrationPromise, timeoutPromise])) as
+      | ServiceWorkerRegistration
+      | {success: false; error: string};
+
+    if (registration && "error" in registration) {
+      console.warn(registration.error);
+
+      return {
+        success: false,
+        error: registration.error,
+      };
+    }
+
+    if (!registration || "error" in registration) {
+      return {
+        success: false,
+        error: "Service worker registration returned undefined or failed",
+      };
+    }
+
+    console.log("Service worker registered successfully");
 
     return {success: true};
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+
+    console.error("Service worker registration error:", errorMessage);
 
     return {
       success: false,
