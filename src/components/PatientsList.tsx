@@ -1,7 +1,5 @@
 "use client";
 
-import {getLocalPatients} from "../lib/localStorageService";
-
 import PatientRow from "./PatientRow";
 import {Table, TableBody, TableHead, TableHeader, TableRow} from "./ui/table";
 
