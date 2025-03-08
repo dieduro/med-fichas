@@ -3,6 +3,7 @@
 import React, {createContext, useContext, useEffect, useState} from "react";
 
 import {syncService} from "@/lib/services/syncService";
+import {migrationService} from "@/lib/services/migrationService";
 
 // Define the context type
 interface OfflineContextType {
@@ -11,6 +12,7 @@ interface OfflineContextType {
   syncErrors: string[];
   lastSyncTime: Date | null;
   manualSync: () => Promise<void>;
+  flushSyncQueue: () => Promise<void>;
 }
 
 // Create the context with default values
@@ -20,6 +22,7 @@ const OfflineContext = createContext<OfflineContextType>({
   syncErrors: [],
   lastSyncTime: null,
   manualSync: async () => {},
+  flushSyncQueue: async () => {},
 });
 
 // Hook to use the offline context
@@ -31,6 +34,7 @@ export const OfflineProvider: React.FC<{children: React.ReactNode}> = ({children
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncErrors, setSyncErrors] = useState<string[]>([]);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [isMigrating, setIsMigrating] = useState<boolean>(false);
 
   // Handle online status change
   const handleOnline = () => {
@@ -73,14 +77,66 @@ export const OfflineProvider: React.FC<{children: React.ReactNode}> = ({children
     await syncData();
   };
 
-  // Initialize online/offline listeners
-  useEffect(() => {
-    syncService.initListeners(handleOnline, handleOffline);
+  // Function to flush the sync queue
+  const flushSyncQueue = async () => {
+    try {
+      console.log("Flushing sync queue...");
+      const result = await syncService.flushSyncQueue();
 
-    // Initial data load if online
-    if (syncService.isOnline()) {
-      syncService.loadDataFromSupabase();
+      if (!result.success) {
+        console.error("Failed to flush sync queue:", result.error);
+        setSyncErrors([`Failed to flush sync queue: ${result.error}`]);
+      } else {
+        console.log("Sync queue flushed successfully");
+        setSyncErrors([]);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      console.error("Error flushing sync queue:", errorMessage);
+      setSyncErrors([`Error flushing sync queue: ${errorMessage}`]);
     }
+  };
+
+  // Function to run migrations if needed
+  const runMigrations = async () => {
+    try {
+      setIsMigrating(true);
+
+      // Check if migrations are needed
+      const migrationNeeded = await migrationService.isMigrationNeeded();
+
+      if (migrationNeeded) {
+        console.log("Running database migrations...");
+        const result = await migrationService.runMigrationsIfNeeded();
+
+        if (!result.success) {
+          console.error("Migration failed:", result.error);
+        } else {
+          console.log("Migrations completed successfully");
+        }
+      } else {
+        console.log("No migrations needed");
+      }
+    } catch (error) {
+      console.error("Error running migrations:", error);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  // Initialize online/offline listeners and run migrations
+  useEffect(() => {
+    // Run migrations first
+    runMigrations().then(() => {
+      // Then initialize online/offline listeners
+      syncService.initListeners(handleOnline, handleOffline);
+
+      // Initial data load if online
+      if (syncService.isOnline()) {
+        syncService.loadDataFromSupabase();
+      }
+    });
 
     // Set up periodic sync (every 5 minutes when online)
     const syncInterval = setInterval(
@@ -105,6 +161,7 @@ export const OfflineProvider: React.FC<{children: React.ReactNode}> = ({children
     syncErrors,
     lastSyncTime,
     manualSync,
+    flushSyncQueue,
   };
 
   return <OfflineContext.Provider value={contextValue}>{children}</OfflineContext.Provider>;

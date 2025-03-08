@@ -89,8 +89,11 @@ export const dataService = {
       // If online, try to save to Supabase first
       if (syncService.isOnline()) {
         try {
+          // Remove the age field before saving to Supabase
+          const {age, ...patientWithoutAge} = patientWithId;
+
           // Try to upsert with user_id
-          const {error} = await supabase.from("patients").upsert(patientWithId);
+          const {error} = await supabase.from("patients").upsert(patientWithoutAge);
 
           if (error) {
             console.error("Error saving patient to Supabase:", error);

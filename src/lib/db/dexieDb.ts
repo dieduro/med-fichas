@@ -21,7 +21,7 @@ export class MedFichasDatabase extends Dexie {
     super("MedFichasDB");
 
     this.version(1).stores({
-      patients: "id, full_name, email, phone_number, gender, dob, age",
+      patients: "id, full_name, email, phone_number, gender, dob",
       syncQueue: "id, operation, tableName, timestamp, synced",
     });
   }
@@ -60,6 +60,16 @@ export const dbOperations = {
     return id;
   },
 
+  // Save a patient without adding to the sync queue (for initial data load)
+  async savePatientWithoutSync(patient: Patient): Promise<string> {
+    const id = patient.id || crypto.randomUUID();
+    const patientWithId = {...patient, id};
+
+    await db.patients.put(patientWithId);
+
+    return id;
+  },
+
   async deletePatient(id: string): Promise<void> {
     await db.patients.delete(id);
 
@@ -85,6 +95,16 @@ export const dbOperations = {
 
   async clearSyncedItems(): Promise<void> {
     await db.syncQueue.filter((item) => item.synced).delete();
+  },
+
+  // Clear all items in the sync queue (both synced and unsynced)
+  async clearAllSyncItems(): Promise<void> {
+    await db.syncQueue.clear();
+  },
+
+  // Update a sync queue item's data
+  async updateSyncItem(id: string, data: Record<string, unknown>): Promise<void> {
+    await db.syncQueue.update(id, {data});
   },
 };
 

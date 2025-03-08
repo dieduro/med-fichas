@@ -3,8 +3,7 @@
 import Link from "next/link";
 import React, {useState} from "react";
 import {useRouter} from "next/navigation";
-
-import {clearLocalPatients} from "../lib/localStorageService";
+import {Settings} from "lucide-react";
 
 import PatientsList from "./PatientsList";
 import PackageIcon from "./svg/Package";
@@ -45,14 +44,16 @@ const Dashboard: React.FC<{patients: Patient[]}> = ({patients}) => {
           </form>
         </div>
         <div className="flex items-center gap-4">
+          <Link href="/admin">
+            <Button size="icon" title="Admin Settings" variant="ghost">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </Link>
           <Button onClick={createNewPatient}>Nuevo Paciente</Button>
         </div>
       </header>
-      <main className="grid flex-1 grid-cols-1 gap-8 p-6 md:grid-cols-[1fr_300px]">
+      <main className="grid flex-1 p-6">
         <PatientsList patients={patients} searchValue={searchValue} />
-        <Button variant="destructive" onClick={clearLocalPatients}>
-          Borrar pacientes
-        </Button>
       </main>
     </div>
   );

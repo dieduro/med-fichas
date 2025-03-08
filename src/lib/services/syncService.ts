@@ -65,11 +65,11 @@ export const syncService = {
           if (item.operation === "create" || item.operation === "update") {
             // Create a copy of the patient object without the user_id field
             // to avoid the error when the column doesn't exist
-            const {user_id, ...patientWithoutUserId} = patient;
+            const {user_id, age, ...patientWithoutExcludedFields} = patient;
 
             // Try to upsert with user_id set to 'system' to work with RLS policies
             const patientWithSystemUserId = {
-              ...patientWithoutUserId,
+              ...patientWithoutExcludedFields,
               user_id: "system",
             };
 
@@ -84,16 +84,47 @@ export const syncService = {
             if (error) {
               console.error(`Error syncing patient ${patient.id}:`, error);
 
-              // If we get an RLS error, log more details to help debugging
-              if (error.code === "42501") {
+              // If we get a schema error, try to sanitize the data and retry
+              if (error.code === "PGRST204") {
+                console.error(`This is a schema error. Attempting to sanitize the data and retry.`);
+
+                // Create a sanitized version with only the fields we know are in the schema
+                const sanitizedPatient = {
+                  id: patient.id,
+                  full_name: patient.full_name,
+                  email: patient.email,
+                  phone_number: patient.phone_number,
+                  gender: patient.gender,
+                  dob: patient.dob,
+                  notes: patient.notes,
+                  user_id: "system",
+                };
+
+                // Try again with the sanitized data
+                console.log("Sanitized patient:", sanitizedPatient);
+                const retryResult = await supabase.from("patients").upsert(sanitizedPatient);
+
+                if (retryResult.error) {
+                  console.error(`Error on retry for patient ${patient.id}:`, retryResult.error);
+                  errors.push(
+                    `Error syncing patient ${patient.id} after sanitization: ${retryResult.error.message}`,
+                  );
+                  continue;
+                } else {
+                  console.log(`Successfully synced patient ${patient.id} after sanitization`);
+                }
+              } else if (error.code === "42501") {
+                // If we get an RLS error, log more details to help debugging
                 console.error(
                   `This is an RLS policy violation. Please check your RLS policies in Supabase.`,
                 );
                 console.error(`You may need to run the SQL in src/scripts/fix-rls-policies.sql`);
+                errors.push(`Error syncing patient ${patient.id}: ${error.message}`);
+                continue;
+              } else {
+                errors.push(`Error syncing patient ${patient.id}: ${error.message}`);
+                continue;
               }
-
-              errors.push(`Error syncing patient ${patient.id}: ${error.message}`);
-              continue;
             }
             console.log(`Successfully synced patient ${patient.id}`);
           } else if (item.operation === "delete") {
@@ -146,14 +177,74 @@ export const syncService = {
         return {success: false, error: error.message};
       }
 
-      // Store patients in IndexedDB
+      // Store patients in IndexedDB without adding to sync queue
       for (const patient of patients) {
-        await dbOperations.savePatient(patient as Patient);
+        // No need to add age as it's calculated on the fly in the UI
+        await dbOperations.savePatientWithoutSync(patient as Patient);
       }
 
       return {success: true};
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+
+      return {success: false, error: errorMessage};
+    }
+  },
+
+  // Sanitize data in the syncQueue to match current schema
+  async sanitizeSyncQueue(): Promise<{success: boolean; error?: string}> {
+    try {
+      const pendingItems = await dbOperations.getPendingSyncItems();
+
+      for (const item of pendingItems) {
+        if (
+          item.tableName === "patients" &&
+          (item.operation === "create" || item.operation === "update")
+        ) {
+          const patient = item.data as unknown as Patient;
+
+          // Create a sanitized version of the patient data
+          const sanitizedPatient = {
+            id: patient.id,
+            full_name: patient.full_name,
+            email: patient.email,
+            phone_number: patient.phone_number,
+            gender: patient.gender,
+            dob: patient.dob,
+            notes: patient.notes,
+            user_id: patient.user_id || "system",
+            // Add any other fields that are in your current schema
+          };
+
+          // Update the item in the syncQueue
+          await dbOperations.updateSyncItem(item.id, sanitizedPatient);
+        }
+      }
+
+      console.log("Successfully sanitized the syncQueue");
+
+      return {success: true};
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      console.error("Error sanitizing syncQueue:", errorMessage);
+
+      return {success: false, error: errorMessage};
+    }
+  },
+
+  // Flush the syncQueue - useful before schema changes
+  async flushSyncQueue(): Promise<{success: boolean; error?: string}> {
+    try {
+      // Delete all items in the syncQueue
+      await dbOperations.clearAllSyncItems();
+      console.log("Successfully flushed the syncQueue");
+
+      return {success: true};
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      console.error("Error flushing syncQueue:", errorMessage);
 
       return {success: false, error: errorMessage};
     }
