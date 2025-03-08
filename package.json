@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-rls": "ts-node -r tsconfig-paths/register src/scripts/check-rls.ts",
+    "test-sync": "ts-node -r tsconfig-paths/register src/scripts/test-sync.ts"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.0",
@@ -17,8 +19,11 @@
     "autoprefixer": "^10.4.19",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dexie": "^4.0.11",
+    "dexie-react-hooks": "^1.1.7",
     "lucide-react": "^0.379.0",
     "next": "15.2.0",
+    "next-pwa": "^5.6.0",
     "postcss": "^8.4.38",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -26,7 +31,8 @@
     "tailwind-merge": "^2.3.0",
     "tailwindcss": "^3.4.3",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "workbox-window": "^7.3.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1.0.1",
