@@ -8,4 +8,5 @@ export interface Patient {
   gender: string;
   dob: string;
   notes: string;
+  user_id?: string;
 }

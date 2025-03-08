@@ -2,6 +2,7 @@
 
 import React, {useState} from "react";
 import Link from "next/link";
+import {useRouter} from "next/navigation";
 
 import {
   Card,
@@ -23,15 +24,38 @@ import {
 import {Textarea} from "@/components/ui/textarea";
 import {Button, buttonVariants} from "@/components/ui/button";
 import {Patient} from "@/types/Patient";
-import {postClient} from "@/app/patient/[id]/actions";
+import {dataService} from "@/lib/services/dataService";
 
 const PatientForm: React.FC<{
   patient: Patient | undefined;
 }> = ({patient}) => {
   const [patientData, setPatientData] = useState<Patient | undefined>(patient);
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPatientData((prev) => ({...prev, [e.target.name]: e.target.value}) as Patient);
+  };
+
+  // Extract form action to a function
+  const handleFormAction = async (formData: FormData) => {
+    // Convert FormData to Patient object
+    const patient: Patient = {
+      full_name: formData.get("full_name") as string,
+      email: formData.get("email") as string,
+      phone_number: formData.get("phone_number") as string,
+      gender: formData.get("gender") as string,
+      dob: formData.get("dob") as string,
+      notes: formData.get("notes") as string,
+      id: (formData.get("id") as string) || undefined,
+      user_id: "system", // Add user_id to help with RLS policies
+    };
+
+    console.log("Saving patient!!");
+    const result = await dataService.savePatient(patient);
+
+    if (result.success) {
+      router.push(`/patient/${result.id}`);
+    }
   };
 
   return (
@@ -40,7 +64,7 @@ const PatientForm: React.FC<{
         <CardTitle>Información del paciente</CardTitle>
         <CardDescription>Completar el formulario con la información del paciente</CardDescription>
       </CardHeader>
-      <form action={postClient}>
+      <form action={handleFormAction}>
         <CardContent className="grid gap-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -76,7 +100,13 @@ const PatientForm: React.FC<{
             </div>
             <div className="space-y-2">
               <Label htmlFor="dob">Fecha de nacimiento</Label>
-              <Input defaultValue={patientData?.dob || ""} id="dob" name="dob" type="date" />
+              <Input
+                defaultValue={patientData?.dob || ""}
+                id="dob"
+                name="dob"
+                type="date"
+                onChange={handleChange}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
