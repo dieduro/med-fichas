@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 
 import SyncControls from "./ui/SyncControls";
+import {OfflineIndicator} from "./ui/OfflineIndicator";
 import {Button} from "./ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "./ui/card";
 
@@ -63,6 +64,8 @@ const AdminDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <OfflineIndicator fixed={false} />
     </div>
   );
 };

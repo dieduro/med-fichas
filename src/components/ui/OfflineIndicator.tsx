@@ -9,7 +9,12 @@ import {Button} from "./button";
 
 import {cn} from "@/lib/utils";
 
-export const OfflineIndicator: React.FC = () => {
+interface OfflineIndicatorProps {
+  className?: string;
+  fixed?: boolean;
+}
+
+export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({className, fixed = false}) => {
   const {isOnline, isSyncing, syncErrors, lastSyncTime, manualSync} = useOffline();
 
   // Format the last sync time
@@ -22,7 +27,7 @@ export const OfflineIndicator: React.FC = () => {
     : "Never";
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className={cn(fixed ? "fixed bottom-4 right-4 z-50" : "mt-8", className)}>
       <div
         className={cn(
           "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium shadow-md transition-all duration-300",
