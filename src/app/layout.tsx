@@ -18,14 +18,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Med-Fichas",
+  title: "MediFichas",
   description: "Medical Patient Management System",
   manifest: "/manifest.json",
   themeColor: "#4f46e5",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Med-Fichas",
+    title: "MediFichas",
   },
   viewport: {
     width: "device-width",
@@ -47,7 +47,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
           <PWAInitializer>
             <OfflineProvider>
               <header className="max-w-3xl text-xl font-bold leading-[4rem]">
-                <Link href="/">Med-Fichas</Link>
+                <Link href="/">MediFichas</Link>
               </header>
               <main className="py-8">{children}</main>
               <footer className="text-center leading-[4rem] opacity-70">
