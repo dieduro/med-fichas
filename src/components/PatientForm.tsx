@@ -1,8 +1,10 @@
 "use client";
 
-import React, {useState} from "react";
+import React, {useState, useEffect, FormEvent} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
+import {Loader2} from "lucide-react";
+import {toast} from "sonner";
 
 import {
   Card,
@@ -38,23 +40,52 @@ const PatientForm: React.FC<{
 
   // Extract form action to a function
   const handleFormAction = async (formData: FormData) => {
-    // Convert FormData to Patient object
-    const patient: Patient = {
-      full_name: formData.get("full_name") as string,
-      email: formData.get("email") as string,
-      phone_number: formData.get("phone_number") as string,
-      gender: formData.get("gender") as string,
-      dob: formData.get("dob") as string,
-      notes: formData.get("notes") as string,
-      id: (formData.get("id") as string) || undefined,
-      user_id: "system", // Add user_id to help with RLS policies
-    };
+    try {
+      // Convert FormData to Patient object
+      const patientId = formData.get("id") as string;
 
-    console.log("Saving patient!!");
-    const result = await dataService.savePatient(patient);
+      console.log("Form submission - Patient ID:", patientId);
 
-    if (result.success) {
-      router.push(`/patient/${result.id}`);
+      const patientToSave: Patient = {
+        full_name: formData.get("full_name") as string,
+        email: formData.get("email") as string,
+        phone_number: formData.get("phone_number") as string,
+        gender: formData.get("gender") as string,
+        dob: formData.get("dob") as string,
+        notes: formData.get("notes") as string,
+        id: patientId || undefined,
+        user_id: "system", // Add user_id to help with RLS policies
+      };
+
+      console.log("Saving patient with ID:", patientToSave.id);
+
+      // Show saving toast
+      const toastId = toast.loading(
+        patientId ? "Actualizando paciente..." : "Guardando paciente...",
+      );
+
+      const result = await dataService.savePatient(patientToSave);
+
+      if (result.success) {
+        // Update toast on success
+        toast.success(
+          patientId ? "Paciente actualizado correctamente" : "Paciente guardado correctamente",
+          {id: toastId},
+        );
+        router.push(`/patient/${result.id}`);
+      } else {
+        // Show error toast
+        toast.error(
+          `Error al ${patientId ? "actualizar" : "guardar"} el paciente: ${result.error || "Error desconocido"}`,
+          {id: toastId},
+        );
+        // We don't need to reset isSubmitting here as we're not using it after form submission
+      }
+    } catch (error) {
+      console.error("Error saving patient:", error);
+      // Show error toast
+      toast.error(`Error: ${error instanceof Error ? error.message : "Error desconocido"}`);
+      // We don't need to reset isSubmitting here as we're not using it after form submission
     }
   };
 
@@ -66,6 +97,8 @@ const PatientForm: React.FC<{
       </CardHeader>
       <form action={handleFormAction}>
         <CardContent className="grid gap-6">
+          {/* Hidden input for patient ID */}
+          <input name="id" type="hidden" value={patientData?.id || ""} />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="full_name">Nombre</Label>
