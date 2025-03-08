@@ -7,7 +7,6 @@ import "./globals.css";
 import "./styles.css";
 import PWAInitializer from "@/components/providers/PWAInitializer";
 import OfflineProvider from "@/components/providers/OfflineProvider";
-import OfflineIndicator from "@/components/ui/OfflineIndicator";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -50,7 +49,6 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
             <footer className="text-center leading-[4rem] opacity-70">
               © {new Date().getFullYear()} DiegoDuro
             </footer>
-            <OfflineIndicator />
           </OfflineProvider>
         </PWAInitializer>
       </body>

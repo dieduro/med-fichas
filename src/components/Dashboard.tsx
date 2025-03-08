@@ -8,6 +8,7 @@ import {Settings, Plus} from "lucide-react";
 import PatientsList from "./PatientsList";
 import PackageIcon from "./svg/Package";
 import SearchIcon from "./svg/Search";
+import {SubtleOfflineIndicator} from "./ui/SubtleOfflineIndicator";
 
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -49,6 +50,7 @@ const Dashboard: React.FC<{patients: Patient[]}> = ({patients}) => {
               <Settings className="h-5 w-5" />
             </Button>
           </Link>
+          <SubtleOfflineIndicator />
           <Button className="hidden md:flex" onClick={createNewPatient}>
             Nuevo Paciente
           </Button>
