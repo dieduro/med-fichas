@@ -53,6 +53,7 @@ const PatientForm: React.FC<{
         gender: formData.get("gender") as string,
         dob: formData.get("dob") as string,
         notes: formData.get("notes") as string,
+        health_insurance: formData.get("health_insurance") as string,
         id: patientId || undefined,
         user_id: "system", // Add user_id to help with RLS policies
       };
@@ -155,6 +156,16 @@ const PatientForm: React.FC<{
                   <SelectItem value="other">Otro</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="health_insurance">Obra Social</Label>
+              <Input
+                defaultValue={patientData?.health_insurance || ""}
+                id="health_insurance"
+                name="health_insurance"
+                placeholder="Obra Social del paciente"
+                onChange={handleChange}
+              />
             </div>
           </div>
           <div className="space-y-2">

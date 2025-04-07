@@ -33,6 +33,7 @@ const PatientRow: React.FC<PatientRowProps> = ({patient}) => {
       </TableCell>
       <TableCell>{patientAge}</TableCell>
       <TableCell>{patient.dob}</TableCell>
+      <TableCell>{patient.health_insurance || "-"}</TableCell>
     </TableRow>
   );
 };
