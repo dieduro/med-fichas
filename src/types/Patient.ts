@@ -8,5 +8,6 @@ export interface Patient {
   gender: string;
   dob: string;
   notes: string;
+  health_insurance?: string;
   user_id?: string;
 }

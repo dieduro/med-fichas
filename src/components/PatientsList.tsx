@@ -22,6 +22,7 @@ const PatientsList: React.FC<{searchValue: string; patients: Patient[]}> = ({
                 <TableHead>Nombre</TableHead>
                 <TableHead>Edad</TableHead>
                 <TableHead>Fecha de nacimiento</TableHead>
+                <TableHead>Obra Social</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="border">
