@@ -18,7 +18,7 @@ function getInitials(email: string): string {
 }
 
 export default async function HomePage() {
-  const supabase = createClient(); // Create server client instance
+  const supabase = await createClient(); // Create server client instance
   const {
     data: {user},
   } = await supabase.auth.getUser(); // Get user session
