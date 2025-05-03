@@ -2,7 +2,6 @@ import type {Metadata} from "next";
 
 import Link from "next/link";
 import {Inter} from "next/font/google";
-import {ThemeProvider} from "next-themes";
 
 import "./globals.css";
 import "./styles.css";
@@ -10,6 +9,8 @@ import PWAInitializer from "@/components/providers/PWAInitializer";
 import OfflineProvider from "@/components/providers/OfflineProvider";
 import {Toaster} from "@/components/ui/sonner";
 import {ToastTest} from "@/components/ToastTest";
+import {Header} from "@/components/layout/header";
+import {ThemeProvider} from "@/components/providers/ThemeProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,23 +37,27 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="en">
+    <html suppressHydrationWarning lang="en">
       <head>
         <link href="/icons/icon-192x192.png" rel="apple-touch-icon" />
         <meta content="yes" name="apple-mobile-web-app-capable" />
         <meta content="default" name="apple-mobile-web-app-status-bar-style" />
       </head>
-      <body className="container m-auto grid min-h-screen grid-rows-[auto,1fr,auto] bg-background px-4 font-sans antialiased">
-        <ThemeProvider enableSystem attribute="class" defaultTheme="system">
+      <body className={`${inter.variable} min-h-screen bg-background font-sans antialiased`}>
+        <ThemeProvider>
           <PWAInitializer>
             <OfflineProvider>
-              <header className="max-w-3xl text-xl font-bold leading-[4rem]">
-                <Link href="/">MediFichas</Link>
-              </header>
-              <main className="py-8">{children}</main>
-              <footer className="text-center leading-[4rem] opacity-70">
-                © {new Date().getFullYear()} DiegoDuro
-              </footer>
+              <div className="relative flex min-h-screen flex-col bg-background">
+                <Header />
+                <main className="container flex-1 py-8">{children}</main>
+                <footer className="py-6 md:px-8 md:py-0">
+                  <div className="container flex flex-col items-center justify-center gap-4 md:h-24 md:flex-row">
+                    <p className="text-balance text-center text-sm leading-loose text-muted-foreground md:text-left">
+                      © {new Date().getFullYear()} DiegoDuro
+                    </p>
+                  </div>
+                </footer>
+              </div>
               <Toaster />
             </OfflineProvider>
           </PWAInitializer>
