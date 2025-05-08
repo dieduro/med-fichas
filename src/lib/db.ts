@@ -24,8 +24,7 @@ export const api = {
     const {data, error} = await client
       .from("patients")
       .select("*")
-      .order("created_at", {ascending: false})
-      .limit(25);
+      .order("created_at", {ascending: false});
 
     if (error) throw error;
 
