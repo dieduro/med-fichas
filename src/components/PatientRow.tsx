@@ -6,7 +6,6 @@ import {useRouter} from "next/navigation";
 import {TableCell, TableRow} from "./ui/table";
 
 import {Patient} from "@/types/Patient";
-import {calculateAge} from "@/utils/helpers";
 
 interface PatientRowProps {
   patient: Patient;
@@ -21,9 +20,6 @@ const PatientRow: React.FC<PatientRowProps> = ({patient}) => {
     router.push(href);
   };
 
-  // Calculate age on the fly
-  const patientAge = calculateAge(patient.dob);
-
   return (
     <TableRow className="cursor-pointer transition-colors" onClick={handleClick}>
       <TableCell>
@@ -31,8 +27,6 @@ const PatientRow: React.FC<PatientRowProps> = ({patient}) => {
           {patient.full_name}
         </Link>
       </TableCell>
-      <TableCell>{patientAge}</TableCell>
-      <TableCell>{patient.dob}</TableCell>
       <TableCell>{patient.health_insurance || "-"}</TableCell>
     </TableRow>
   );

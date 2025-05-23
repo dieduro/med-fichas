@@ -24,9 +24,6 @@ export default async function HomePage() {
   } = await supabase.auth.getUser(); // Get user session
 
   const patients = user ? await api.getPatients() : []; // Fetch patients only if logged in
-  const avatarUrl = user?.user_metadata?.avatar_url; // Get avatar URL
-  const userEmail = user?.email ?? ""; // Get user email
-  const fallbackInitials = getInitials(userEmail); // Generate fallback initials
 
   return (
     <div>
