@@ -27,19 +27,7 @@ export default async function HomePage() {
 
   return (
     <div>
-      {user ? (
-        <Dashboard patients={patients as Patient[]} />
-      ) : (
-        <div className="p-10 text-center">
-          <p>
-            Please{" "}
-            <Link className="text-blue-600 hover:underline" href="/login">
-              login
-            </Link>{" "}
-            to view the dashboard.
-          </p>
-        </div>
-      )}
+      <Dashboard patients={patients as Patient[]} />
     </div>
   );
 }

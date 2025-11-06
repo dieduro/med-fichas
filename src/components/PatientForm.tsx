@@ -2,8 +2,6 @@
 
 import React, {useState, useEffect, FormEvent} from "react";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {Loader2} from "lucide-react";
 import {toast} from "sonner";
 
 import {
@@ -32,7 +30,6 @@ const PatientForm: React.FC<{
   patient: Patient | undefined;
 }> = ({patient}) => {
   const [patientData, setPatientData] = useState<Patient | undefined>(patient);
-  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPatientData((prev) => ({...prev, [e.target.name]: e.target.value}) as Patient);
@@ -73,7 +70,6 @@ const PatientForm: React.FC<{
           patientId ? "Paciente actualizado correctamente" : "Paciente guardado correctamente",
           {id: toastId},
         );
-        router.push(`/patient/${result.id}`);
       } else {
         // Show error toast
         toast.error(

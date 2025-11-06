@@ -28,8 +28,11 @@ export async function updateSession(request: NextRequest) {
   );
 
   // refreshing the auth token
-  const { data: { user } } = await supabase.auth.getUser();
-  console.log('[Middleware] Checked user session. User found:', !!user);
+  const {
+    data: {user},
+  } = await supabase.auth.getUser();
+
+  console.log("[Middleware] Checked user session. User found:", !!user);
 
   return supabaseResponse;
 }
