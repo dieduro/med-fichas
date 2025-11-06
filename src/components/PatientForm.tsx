@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useState, useEffect, FormEvent} from "react";
+import React, {useState} from "react";
 import Link from "next/link";
 import {toast} from "sonner";
 
@@ -65,6 +65,12 @@ const PatientForm: React.FC<{
       const result = await dataService.savePatient(patientToSave);
 
       if (result.success) {
+        // Update local state with the saved data (including the ID for new patients)
+        setPatientData({
+          ...patientToSave,
+          id: result.id || patientToSave.id,
+        });
+        
         // Update toast on success
         toast.success(
           patientId ? "Paciente actualizado correctamente" : "Paciente guardado correctamente",
