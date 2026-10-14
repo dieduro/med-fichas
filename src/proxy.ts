@@ -37,12 +37,12 @@ export async function updateSession(request: NextRequest) {
   return supabaseResponse;
 }
 
-// Export the middleware function that Next.js will run
-export async function middleware(request: NextRequest) {
+// Export the proxy function that Next.js will run
+export async function proxy(request: NextRequest) {
   return await updateSession(request);
 }
 
-// Define paths that should bypass the middleware
+// Define paths that should bypass the proxy
 export const config = {
   matcher: [
     /*
