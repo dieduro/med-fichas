@@ -2,9 +2,7 @@
 import withPWA from "next-pwa";
 
 const nextConfig = {
-  experimental: {
-    reactCompiler: true,
-  },
+  reactCompiler: true,
   logging: {
     fetches: {
       fullUrl: true,
