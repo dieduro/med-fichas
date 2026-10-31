@@ -7,8 +7,11 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
-    "check-rls": "ts-node -r tsconfig-paths/register src/scripts/check-rls.ts",
-    "test-sync": "ts-node -r tsconfig-paths/register src/scripts/test-sync.ts"
+    "check-rls": "tsx src/scripts/check-rls.ts",
+    "test-sync": "pnpm test",
+    "test": "tsx --test src/lib/patients/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.7",
@@ -37,7 +40,8 @@
     "tailwindcss": "^3.4.3",
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^10.0.0",
-    "workbox-window": "^7.3.0"
+    "workbox-window": "^7.3.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/compat": "^1.0.1",
@@ -61,7 +65,10 @@
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.14",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^7.10.0"
+    "typescript-eslint": "^7.10.0",
+    "@playwright/test": "^1.64.1",
+    "fake-indexeddb": "^6.2.7",
+    "tsx": "^4.23.15"
   },
   "packageManager": "pnpm@10.6.2+sha512.47870716bea1572b53df34ad8647b42962bc790ce2bf4562ba0f643237d7302a3d6a8ecef9e4bdfc01d23af1969aa90485d4cebb0b9638fa5ef1daef656f6c1b"
 }

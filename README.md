@@ -13,20 +13,21 @@ Med-Fichas is a modern web application built with Next.js for managing medical p
 
 ## Tech Stack
 
-- **Framework**: [Next.js 15](https://nextjs.org/) with React 19
+- **Framework**: [Next.js 16](https://nextjs.org/) with React 19
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) with custom UI components
 - **UI Components**: Custom components built with Radix UI primitives
 - **Database**: [Supabase](https://supabase.com/) for data storage and authentication
 - **Language**: TypeScript
-- **Server Actions**: Next.js server actions for data mutations
+- **Patient Storage**: Account-scoped IndexedDB with authenticated Supabase synchronization
 
 ## Project Structure
 
 - `/src/app`: Next.js app router pages and layouts
 - `/src/components`: Reusable React components
-- `/src/lib`: Utility functions and shared logic
+- `/src/lib/patients`: Patient persistence, pending changes and synchronization
+- `/src/lib`: Shared logic
 - `/src/types`: TypeScript type definitions
-- `/src/utils/supabase`: Supabase client configuration and utilities
+- `/src/lib/supabase`: Browser, server and session-refresh configuration
 - `/src/actions`: Server actions for data operations
 
 ## Getting Started
@@ -65,8 +66,9 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - Edit patient-related components in `/src/components/`
 - Main application pages are in `/src/app/`
 - Patient detail pages use dynamic routing at `/src/app/patient/[id]/`
-- Database operations are handled through the API functions in `/src/lib/db.ts`
-- Authentication is managed through Supabase middleware
+- Screens read and write patients through `usePatients()` and the module in `/src/lib/patients`
+- See [patient storage and rollout](docs/patient-storage.md) before deploying changes to an existing database
+- Authentication is managed through the Supabase session proxy
 
 ## Key Components
 

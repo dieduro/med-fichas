@@ -7,12 +7,12 @@ import {Button} from "@/components/ui/button";
 import {Icons} from "@/components/icons"; // Assuming you have an Icons component for SVGs
 
 export function GoogleSignInButton() {
-  const supabase = createClient();
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSignIn() {
     setIsLoading(true);
     try {
+      const supabase = createClient();
       const {error} = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
