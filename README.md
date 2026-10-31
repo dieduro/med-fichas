@@ -13,12 +13,12 @@ Med-Fichas is a modern web application built with Next.js for managing medical p
 
 ## Tech Stack
 
-- **Framework**: [Next.js 15](https://nextjs.org/) with React 19
+- **Framework**: [Next.js 16](https://nextjs.org/) with React 19
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) with custom UI components
 - **UI Components**: Custom components built with Radix UI primitives
 - **Database**: [Supabase](https://supabase.com/) for data storage and authentication
 - **Language**: TypeScript
-- **Server Actions**: Next.js server actions for data mutations
+- **Patient Storage**: Account-scoped IndexedDB with authenticated Supabase synchronization
 
 ## Project Structure
 
@@ -68,7 +68,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - Patient detail pages use dynamic routing at `/src/app/patient/[id]/`
 - Screens read and write patients through `usePatients()` and the module in `/src/lib/patients`
 - See [patient storage and rollout](docs/patient-storage.md) before deploying changes to an existing database
-- Authentication is managed through Supabase middleware
+- Authentication is managed through the Supabase session proxy
 
 ## Key Components
 
