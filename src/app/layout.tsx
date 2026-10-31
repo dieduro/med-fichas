@@ -1,14 +1,12 @@
-import type {Metadata} from "next";
+import type {Metadata, Viewport} from "next";
 
-import Link from "next/link";
 import {Inter} from "next/font/google";
 
 import "./globals.css";
 import "./styles.css";
 import PWAInitializer from "@/components/providers/PWAInitializer";
-import OfflineProvider from "@/components/providers/OfflineProvider";
+import PatientsProvider from "@/components/providers/PatientsProvider";
 import {Toaster} from "@/components/ui/sonner";
-import {ToastTest} from "@/components/ToastTest";
 import {Header} from "@/components/layout/header";
 import {ThemeProvider} from "@/components/providers/ThemeProvider";
 
@@ -22,17 +20,17 @@ export const metadata: Metadata = {
   title: "MediFichas",
   description: "Medical Patient Management System",
   manifest: "/manifest.json",
-  themeColor: "#4f46e5",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "MediFichas",
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
@@ -46,7 +44,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       <body className={`${inter.variable} min-h-screen bg-background font-sans antialiased`}>
         <ThemeProvider>
           <PWAInitializer>
-            <OfflineProvider>
+            <PatientsProvider>
               <div className="relative flex min-h-screen flex-col bg-background">
                 <Header />
                 <main className="container flex-1 py-8">{children}</main>
@@ -59,7 +57,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
                 </footer>
               </div>
               <Toaster />
-            </OfflineProvider>
+            </PatientsProvider>
           </PWAInitializer>
         </ThemeProvider>
       </body>

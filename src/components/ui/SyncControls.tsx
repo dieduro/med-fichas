@@ -6,10 +6,11 @@ import {Button} from "./button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "./card";
 import {Badge} from "./badge";
 
-import {useOffline} from "@/components/providers/OfflineProvider";
+import {usePatients} from "@/components/providers/PatientsProvider";
 
 export const SyncControls: React.FC = () => {
-  const {isOnline, isSyncing, syncErrors, lastSyncTime, manualSync, flushSyncQueue} = useOffline();
+  const {isOnline, isSyncing, error, lastSyncTime, module, pendingCount} = usePatients();
+  const syncErrors = error ? [error] : [];
 
   return (
     <Card className="w-full">
@@ -23,22 +24,17 @@ export const SyncControls: React.FC = () => {
         <CardDescription>Manage data synchronization with the server</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <p>{pendingCount} cambio(s) pendiente(s)</p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             className="flex-1"
-            disabled={!isOnline || isSyncing}
+            disabled={!module || !isOnline || isSyncing}
             variant="default"
-            onClick={manualSync}
+            onClick={() => {
+              void module?.sync();
+            }}
           >
             {isSyncing ? "Syncing..." : "Sync Now"}
-          </Button>
-          <Button
-            className="flex-1"
-            disabled={isSyncing}
-            variant="destructive"
-            onClick={flushSyncQueue}
-          >
-            Flush Sync Queue
           </Button>
         </div>
 

@@ -1,8 +1,10 @@
 "use client";
 
 import React, {useState} from "react";
-import Link from "next/link";
 import {toast} from "sonner";
+import {ZodError} from "zod";
+
+import {usePatients} from "./providers/PatientsProvider";
 
 import {
   Card,
@@ -23,72 +25,40 @@ import {
 } from "@/components/ui/select";
 import {Textarea} from "@/components/ui/textarea";
 import {Button, buttonVariants} from "@/components/ui/button";
-import {Patient} from "@/types/Patient";
-import {dataService} from "@/lib/services/dataService";
+import {patientDraftSchema, type Patient} from "@/types/Patient";
 
-const PatientForm: React.FC<{
-  patient: Patient | undefined;
-}> = ({patient}) => {
-  const [patientData, setPatientData] = useState<Patient | undefined>(patient);
+const PatientForm = ({patient: initialPatient}: {patient: Patient | undefined}) => {
+  const [patient, setSavedPatient] = useState(initialPatient);
+  const {module} = usePatients();
+  const [patientId, setPatientId] = useState(patient?.id);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPatientData((prev) => ({...prev, [e.target.name]: e.target.value}) as Patient);
-  };
-
-  // Extract form action to a function
   const handleFormAction = async (formData: FormData) => {
+    if (!module || isSaving) return;
+    setIsSaving(true);
+    const toastId = toast.loading("Guardando paciente...");
+
     try {
-      // Convert FormData to Patient object
-      const patientId = formData.get("id") as string;
+      const draft = patientDraftSchema.parse(Object.fromEntries(formData));
+      const saved = await module.save(draft, patientId);
 
-      console.log("Form submission - Patient ID:", patientId);
-
-      const patientToSave: Patient = {
-        full_name: formData.get("full_name") as string,
-        email: formData.get("email") as string,
-        phone_number: formData.get("phone_number") as string,
-        gender: formData.get("gender") as string,
-        dob: formData.get("dob") as string,
-        notes: formData.get("notes") as string,
-        health_insurance: formData.get("health_insurance") as string,
-        id: patientId || undefined,
-        user_id: "system", // Add user_id to help with RLS policies
-      };
-
-      console.log("Saving patient with ID:", patientToSave.id);
-
-      // Show saving toast
-      const toastId = toast.loading(
-        patientId ? "Actualizando paciente..." : "Guardando paciente...",
+      setPatientId(saved.id);
+      setSavedPatient(saved);
+      toast.success(
+        "Paciente guardado en este dispositivo. Los cambios se sincronizan al conectar.",
+        {id: toastId},
       );
-
-      const result = await dataService.savePatient(patientToSave);
-
-      if (result.success) {
-        // Update local state with the saved data (including the ID for new patients)
-        setPatientData({
-          ...patientToSave,
-          id: result.id || patientToSave.id,
-        });
-        
-        // Update toast on success
-        toast.success(
-          patientId ? "Paciente actualizado correctamente" : "Paciente guardado correctamente",
-          {id: toastId},
-        );
-      } else {
-        // Show error toast
-        toast.error(
-          `Error al ${patientId ? "actualizar" : "guardar"} el paciente: ${result.error || "Error desconocido"}`,
-          {id: toastId},
-        );
-        // We don't need to reset isSubmitting here as we're not using it after form submission
-      }
     } catch (error) {
-      console.error("Error saving patient:", error);
-      // Show error toast
-      toast.error(`Error: ${error instanceof Error ? error.message : "Error desconocido"}`);
-      // We don't need to reset isSubmitting here as we're not using it after form submission
+      toast.error(
+        error instanceof ZodError
+          ? error.issues[0].message
+          : error instanceof Error
+            ? error.message
+            : "No se pudo guardar",
+        {id: toastId},
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -98,25 +68,30 @@ const PatientForm: React.FC<{
         <CardTitle>Información del paciente</CardTitle>
         <CardDescription>Completar el formulario con la información del paciente</CardDescription>
       </CardHeader>
-      <form action={handleFormAction}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleFormAction(new FormData(event.currentTarget));
+        }}
+      >
         <CardContent className="grid gap-6">
           {/* Hidden input for patient ID */}
-          <input name="id" type="hidden" value={patientData?.id || ""} />
+          <input name="id" type="hidden" value={patientId || ""} />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="full_name">Nombre</Label>
               <Input
-                defaultValue={patientData?.full_name || ""}
+                required
+                defaultValue={patient?.full_name || ""}
                 id="full_name"
                 name="full_name"
                 placeholder="Nombre del paciente"
-                onChange={handleChange}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
-                defaultValue={patientData?.email || ""}
+                defaultValue={patient?.email || ""}
                 id="email"
                 name="email"
                 placeholder="Email del paciente"
@@ -128,7 +103,7 @@ const PatientForm: React.FC<{
             <div className="space-y-2">
               <Label htmlFor="phone_number">Teléfono</Label>
               <Input
-                defaultValue={patientData?.phone_number || ""}
+                defaultValue={patient?.phone_number || ""}
                 id="phone_number"
                 name="phone_number"
                 placeholder="Teléfono del paciente"
@@ -136,19 +111,13 @@ const PatientForm: React.FC<{
             </div>
             <div className="space-y-2">
               <Label htmlFor="dob">Fecha de nacimiento</Label>
-              <Input
-                defaultValue={patientData?.dob || ""}
-                id="dob"
-                name="dob"
-                type="date"
-                onChange={handleChange}
-              />
+              <Input defaultValue={patient?.dob || ""} id="dob" name="dob" type="date" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="gender">Género</Label>
-              <Select defaultValue={patientData?.gender || ""} name="gender">
+              <Select defaultValue={patient?.gender || ""} name="gender">
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar género" />
                 </SelectTrigger>
@@ -162,11 +131,10 @@ const PatientForm: React.FC<{
             <div className="space-y-2">
               <Label htmlFor="health_insurance">Obra Social</Label>
               <Input
-                defaultValue={patientData?.health_insurance || ""}
+                defaultValue={patient?.health_insurance || ""}
                 id="health_insurance"
                 name="health_insurance"
                 placeholder="Obra Social del paciente"
-                onChange={handleChange}
               />
             </div>
           </div>
@@ -174,7 +142,7 @@ const PatientForm: React.FC<{
             <Label htmlFor="notes">Historia clínica</Label>
             <Textarea
               className="min-h-[200px]"
-              defaultValue={patientData?.notes || ""}
+              defaultValue={patient?.notes || ""}
               id="notes"
               name="notes"
               placeholder="Ingresar información clínica relevante"
@@ -182,10 +150,12 @@ const PatientForm: React.FC<{
           </div>
         </CardContent>
         <CardFooter className="flex justify-end gap-4">
-          <Link className={buttonVariants({variant: "secondary"})} href="/">
+          <a className={buttonVariants({variant: "secondary"})} href="/">
             Volver
-          </Link>
-          <Button type="submit">Guardar</Button>
+          </a>
+          <Button disabled={isSaving || !module} type="submit">
+            {isSaving ? "Guardando..." : "Guardar"}
+          </Button>
         </CardFooter>
       </form>
     </Card>

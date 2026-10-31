@@ -2,13 +2,13 @@
 
 import React from "react";
 
-import {useOffline} from "../providers/OfflineProvider";
+import {usePatients} from "../providers/PatientsProvider";
 
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {cn} from "@/lib/utils";
 
 export const SubtleOfflineIndicator: React.FC = () => {
-  const {isOnline, lastSyncTime} = useOffline();
+  const {isOnline, lastSyncTime} = usePatients();
 
   // Format the last sync time
   const formattedLastSync = lastSyncTime

@@ -20,6 +20,7 @@ export const PWAInitializer: React.FC<PWAInitializerProps> = ({children}) => {
   const [showIndicator, setShowIndicator] = useState(true);
 
   useEffect(() => {
+    if (process.env.NODE_ENV !== "production") return;
     // Initialize PWA in the background without blocking the UI
     const initializePWA = async () => {
       try {
@@ -29,7 +30,7 @@ export const PWAInitializer: React.FC<PWAInitializerProps> = ({children}) => {
         setRegistrationStatus({
           initialized: true,
           success: result.success,
-          error: result.error,
+          error: result.success ? undefined : result.error,
         });
 
         if (!result.success && result.error) {

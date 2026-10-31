@@ -1,6 +1,10 @@
-import Link from "next/link";
+"use client";
 
-import {createClient} from "@/lib/supabase/server";
+import type {User} from "@supabase/supabase-js";
+
+import {useEffect, useState} from "react";
+
+import {createClient} from "@/lib/supabase/client";
 import {LogoutButton} from "@/components/auth/logout-button";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
@@ -18,11 +22,18 @@ function getInitials(email: string): string {
     .slice(0, 2);
 }
 
-export async function Header() {
-  const supabase = await createClient();
-  const {
-    data: {user},
-  } = await supabase.auth.getUser();
+export function Header() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const {
+      data: {subscription},
+    } = createClient().auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const avatarUrl = user?.user_metadata?.avatar_url;
   const userEmail = user?.email ?? "";
@@ -33,9 +44,9 @@ export async function Header() {
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           {/* TODO: Replace with actual Logo component */}
-          <Link className="mr-6 flex items-center space-x-2" href="/">
+          <a className="mr-6 flex items-center space-x-2" href="/">
             <span className="font-bold">MedFichas</span>
-          </Link>
+          </a>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-4">
@@ -51,7 +62,7 @@ export async function Header() {
               </>
             ) : (
               <Button asChild size="sm" variant="outline">
-                <Link href="/login">Login</Link>
+                <a href="/login">Login</a>
               </Button>
             )}
           </nav>

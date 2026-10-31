@@ -15,7 +15,7 @@ import vercelStyleGuideNext from "@vercel/style-guide/eslint/next";
 export default [
   // Ignores configuration
   {
-    ignores: ["node_modules", ".next", "out", "coverage", ".idea"],
+    ignores: ["node_modules", ".next", "out", "coverage", ".idea", "public/sw.js", "public/workbox-*.js"],
   },
   // General configuration
   {

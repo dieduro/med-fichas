@@ -3,7 +3,7 @@
 import React from "react";
 import {Wifi, WifiOff, RefreshCw} from "lucide-react";
 
-import {useOffline} from "../providers/OfflineProvider";
+import {usePatients} from "../providers/PatientsProvider";
 
 import {Button} from "./button";
 
@@ -15,7 +15,8 @@ interface OfflineIndicatorProps {
 }
 
 export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({className, fixed = false}) => {
-  const {isOnline, isSyncing, syncErrors, lastSyncTime, manualSync} = useOffline();
+  const {isOnline, isSyncing, error, lastSyncTime, module} = usePatients();
+  const syncErrors = error ? [error] : [];
 
   // Format the last sync time
   const formattedLastSync = lastSyncTime
@@ -51,7 +52,9 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({className, fi
             size="sm"
             title="Sync now"
             variant="ghost"
-            onClick={manualSync}
+            onClick={() => {
+              void module?.sync();
+            }}
           >
             <RefreshCw className={cn("h-3 w-3", isSyncing && "animate-spin")} />
             <span className="sr-only">Sync now</span>
