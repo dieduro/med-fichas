@@ -241,3 +241,96 @@ test("mobile list supports accented search, insurance search and clear without l
   await patientLink.click();
   await expect(page.getByLabel("Nombre", {exact: true})).toHaveValue(mobilePatient.full_name);
 });
+
+test("patient form fits phones and saves personal, contact and clinical details", async ({
+  page,
+  context,
+}) => {
+  let storedPatient = {...patient};
+
+  await context.route("https://patients.example.test/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname === "/auth/v1/user") return route.fulfill({json: user});
+    if (request.method() === "POST") {
+      storedPatient = request.postDataJSON();
+
+      return route.fulfill({json: {id: storedPatient.id}});
+    }
+
+    return route.fulfill({json: url.searchParams.has("id") ? [] : [storedPatient]});
+  });
+  await page.setViewportSize({width: 390, height: 844});
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)), {timeout: 15000})
+    .toBe(true);
+  await context.addCookies([sessionCookie(user)]);
+  await page.reload();
+  await page.getByRole("link", {name: patient.full_name, exact: true}).click();
+  await expect(page.getByRole("heading", {name: patient.full_name, exact: true})).toBeVisible();
+
+  for (const width of [320, 390, 640, 1280]) {
+    await page.setViewportSize({width, height: 844});
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    for (const label of [
+      "Nombre",
+      "Fecha de nacimiento",
+      "Género",
+      "Teléfono",
+      "Email",
+      "Obra Social",
+      "Historia clínica",
+    ]) {
+      const control = page.getByLabel(label, {exact: true});
+      const bounds = await control.boundingBox();
+
+      expect(bounds?.height).toBeGreaterThanOrEqual(44);
+      expect(bounds?.x).toBeGreaterThanOrEqual(0);
+      expect((bounds?.x ?? width) + (bounds?.width ?? width)).toBeLessThanOrEqual(width);
+    }
+    const dob = await page.getByLabel("Fecha de nacimiento").boundingBox();
+    const gender = await page.getByRole("combobox", {name: "Género"}).boundingBox();
+
+    if (width < 640) {
+      expect(gender?.y).toBeGreaterThan((dob?.y ?? 0) + (dob?.height ?? 0));
+    } else {
+      expect(gender?.y).toBe(dob?.y);
+    }
+  }
+  await page.setViewportSize({width: 390, height: 844});
+  const save = page.getByRole("button", {name: "Guardar", exact: true});
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(save).toBeInViewport();
+  await page.getByLabel("Nombre", {exact: true}).fill("María González");
+  await page.getByLabel("Fecha de nacimiento").fill("1990-05-14");
+  await page.getByRole("combobox", {name: "Género"}).click();
+  await page.getByRole("option", {name: "Femenino"}).click();
+  await page.getByLabel("Teléfono").fill("11 5555 1234");
+  await page.getByLabel("Email", {exact: true}).fill("maria@example.test");
+  await page.getByLabel("Obra Social").fill("OSDE");
+  await page.getByLabel("Historia clínica").fill("Consulta de seguimiento.\nEvolución favorable.");
+  await expect(save).toBeInViewport();
+  await save.click();
+  await expect.poll(() => storedPatient.full_name).toBe("María González");
+  expect(storedPatient).toMatchObject({
+    dob: "1990-05-14",
+    gender: "female",
+    phone_number: "11 5555 1234",
+    email: "maria@example.test",
+    health_insurance: "OSDE",
+    notes: "Consulta de seguimiento.\nEvolución favorable.",
+  });
+  await page.reload();
+  await expect(page.getByLabel("Nombre", {exact: true})).toHaveValue("María González");
+  await expect(page.getByLabel("Historia clínica")).toHaveValue(storedPatient.notes);
+  await page.getByRole("link", {name: "Volver", exact: true}).click();
+  await page.getByRole("button", {name: "Nuevo Paciente", exact: true}).click();
+  await expect(page.getByRole("heading", {name: "Nuevo paciente", exact: true})).toBeVisible();
+  await expect(page.getByLabel("Nombre", {exact: true})).toBeEmpty();
+  await expect(page.getByLabel("Nombre", {exact: true})).toHaveAttribute("required", "");
+});
