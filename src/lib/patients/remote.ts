@@ -3,9 +3,16 @@ import type {PatientRemote} from "./module";
 
 import {z} from "zod";
 
+import {PatientSyncError} from "./errors";
+
 import {patientSchema, type Patient} from "@/types/Patient";
 
 const remotePatientSchema = patientSchema.extend({
+  // Historical records predate the required-name rule used when saving a form.
+  full_name: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? ""),
   email: z
     .string()
     .nullish()
@@ -37,7 +44,7 @@ export function patientRemote(client: SupabaseClient, userId: string): PatientRe
     const {data, error} = await client.auth.getUser();
 
     if (error || data.user?.id !== userId) {
-      throw new Error("Iniciá sesión nuevamente para sincronizar tus cambios.");
+      throw new PatientSyncError("session", error);
     }
   };
 
@@ -53,8 +60,11 @@ export function patientRemote(client: SupabaseClient, userId: string): PatientRe
         if (lastId) query = query.gt("id", lastId);
         const {data, error} = await query;
 
-        if (error) throw new Error(error.message);
-        const page = z.array(remotePatientSchema).parse(data);
+        if (error) throw new PatientSyncError("read", error);
+        const parsed = z.array(remotePatientSchema).safeParse(data);
+
+        if (!parsed.success) throw new PatientSyncError("format", parsed.error);
+        const page = parsed.data;
 
         patients.push(...page);
         const last = page.at(-1);
@@ -77,14 +87,13 @@ export function patientRemote(client: SupabaseClient, userId: string): PatientRe
         .select("id")
         .single();
 
-      if (error) throw new Error(error.message);
-      if (data?.id !== patient.id) throw new Error("El servidor no confirmó el guardado");
+      if (error || data?.id !== patient.id) throw new PatientSyncError("save", error);
     },
     async remove(id) {
       await verifySession();
       const {error} = await client.from("patients").delete().eq("id", id);
 
-      if (error) throw new Error(error.message);
+      if (error) throw new PatientSyncError("remove", error);
     },
   };
 }

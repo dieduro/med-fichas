@@ -11,6 +11,7 @@ import {
   type PatientSnapshot,
 } from "@/lib/patients/module";
 import {patientRemote} from "@/lib/patients/remote";
+import {PatientSyncError} from "@/lib/patients/errors";
 
 type ContextValue = PatientSnapshot &
   ({status: "loading" | "signed-out"; module: null} | {status: "authenticated"; module: Patients});
@@ -33,8 +34,7 @@ function AccountPatients({userId, children}: {userId: string; children: React.Re
       remote: patientRemote(createClient(), userId),
       online: () => navigator.onLine,
       exclusive: async (run) => {
-        if (!navigator.locks)
-          throw new Error("Tu navegador no permite sincronizar de forma segura entre pestañas.");
+        if (!navigator.locks) throw new PatientSyncError("browser");
         await navigator.locks.request(local.name, run);
       },
     });

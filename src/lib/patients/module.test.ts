@@ -125,7 +125,10 @@ test("failed pushes retain edits, skip pull and do not claim successful sync", a
   assert.equal(env.module.getSnapshot().patients[0].notes, "Edición offline");
   assert.equal(env.module.getSnapshot().pendingCount, 1);
   assert.equal(env.module.getSnapshot().lastSyncTime, null);
-  assert.equal(env.module.getSnapshot().error, "permission denied");
+  assert.equal(
+    env.module.getSnapshot().error,
+    "No se pudo sincronizar. Revisá tu conexión e intentá nuevamente.",
+  );
 });
 
 test("concurrent sync callers share the same execution", async (t) => {
@@ -285,4 +288,26 @@ test("invalid drafts and ids are rejected before persistence", async (t) => {
   assert.equal(await env.local.patients.count(), 0);
   assert.equal(await env.local.pending.count(), 0);
   assert.equal(patientDraftSchema.safeParse({...draft, email: "bad"}).success, false);
+});
+
+test("failed refreshes retain cached patients and hide technical error payloads", async (t) => {
+  const env = setup(t);
+  const patient = {...draft, id: crypto.randomUUID()};
+
+  env.records.set(patient.id, patient);
+  env.connect();
+  await env.module.sync();
+  const lastSuccess = env.module.getSnapshot().lastSyncTime;
+
+  env.remote.list = async () => {
+    throw new Error('[{"code":"too_small","path":[24,"full_name"],"message":"technical details"}]');
+  };
+  await env.module.sync();
+  assert.deepEqual(env.module.getSnapshot().patients, [patient]);
+  assert.equal(env.module.getSnapshot().lastSyncTime, lastSuccess);
+  assert.equal(env.module.getSnapshot().pendingCount, 0);
+  assert.equal(
+    env.module.getSnapshot().error,
+    "No se pudo sincronizar. Revisá tu conexión e intentá nuevamente.",
+  );
 });

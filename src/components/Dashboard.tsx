@@ -13,8 +13,9 @@ import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 
 const Dashboard = () => {
-  const {patients, ready, status, error} = usePatients();
+  const {patients, ready, status, error, module, isSyncing} = usePatients();
   const [searchValue, setSearchValue] = useState("");
+  const loadingPatients = !ready || (isSyncing && patients.length === 0 && !error);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);
@@ -61,12 +62,27 @@ const Dashboard = () => {
       <main className="relative grid flex-1 p-6">
         {status === "signed-out" ? (
           <a href="/login">Iniciá sesión para ver tus pacientes</a>
-        ) : !ready ? (
+        ) : loadingPatients ? (
           <p>Cargando pacientes...</p>
         ) : (
           <div>
-            {error ? <p role="alert">{error}</p> : null}
-            <PatientsList patients={patients} searchValue={searchValue} />
+            {error ? (
+              <div className="mb-4 space-y-2" role="alert">
+                <p>{error}</p>
+                <Button
+                  disabled={isSyncing || !module}
+                  variant="outline"
+                  onClick={() => {
+                    void module?.sync();
+                  }}
+                >
+                  {isSyncing ? "Reintentando..." : "Reintentar"}
+                </Button>
+              </div>
+            ) : null}
+            {patients.length > 0 || !error ? (
+              <PatientsList patients={patients} searchValue={searchValue} />
+            ) : null}
           </div>
         )}
 

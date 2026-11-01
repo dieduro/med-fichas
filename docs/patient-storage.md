@@ -10,6 +10,8 @@ screens → PatientsProvider → patient module
 
 ## Persistence and synchronization
 
+Historical rows with empty or null names remain readable and appear as “Paciente sin nombre”. This display label is never written back automatically. Saving a form still requires a nonempty name. Malformed responses stop synchronization without clearing the cache; the UI shows a readable message and retry action instead of technical validation details or a false empty registry.
+
 - A save or delete commits the patient and its pending change in one IndexedDB transaction. Success means the change is durable on this device; it may still be pending remotely.
 - Each patient has one pending change with a unique revision. New edits replace older pending work. A remote response acknowledges only the revision it sent.
 - Synchronization pushes pending changes before downloading a complete remote snapshot. It stops on errors. Downloaded rows never create pending writes and never replace pending local edits or deletes.

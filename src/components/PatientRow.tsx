@@ -20,7 +20,7 @@ const PatientRow: React.FC<PatientRowProps> = ({patient}) => {
     <TableRow className="cursor-pointer transition-colors" onClick={handleClick}>
       <TableCell>
         <a className="block h-full w-full" href={href}>
-          {patient.full_name}
+          {patient.full_name.trim() || "Paciente sin nombre"}
         </a>
       </TableCell>
       <TableCell>{patient.health_insurance || "-"}</TableCell>
