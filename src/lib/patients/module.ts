@@ -1,6 +1,7 @@
 import {liveQuery} from "dexie";
 
 import {PatientDatabase} from "./local";
+import {PatientSyncError, syncErrorMessage} from "./errors";
 
 import {patientSchema, type Patient, type PatientDraft} from "@/types/Patient";
 
@@ -84,7 +85,7 @@ export function createPatients({local, remote, online, exclusive}: Options) {
       publish({lastSyncTime: new Date()});
     })
       .catch((error: unknown) => {
-        publish({error: error instanceof Error ? error.message : "No se pudo sincronizar"});
+        publish({error: syncErrorMessage(error)});
       })
       .finally(() => {
         syncing = null;
@@ -110,11 +111,10 @@ export function createPatients({local, remote, online, exclusive}: Options) {
         pendingCount: await local.pending.count(),
       })).subscribe({
         next: (data) => publish({...data, ready: true}),
-        error: (error: unknown) =>
+        error: () =>
           publish({
             ready: true,
-            error:
-              error instanceof Error ? error.message : "No se pudo abrir el almacenamiento local",
+            error: new PatientSyncError("local").message,
           }),
       });
       const onOnline = () => {

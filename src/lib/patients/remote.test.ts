@@ -73,7 +73,7 @@ test("remote saves retain the shared system marker and require confirmation", as
   assert.deepEqual(body, {...patient, dob: null, user_id: "system"});
   const denied = setup(async () => Response.json(null));
 
-  await assert.rejects(denied.remote.save(patient), /no confirmó/);
+  await assert.rejects(denied.remote.save(patient), /No se pudieron enviar los cambios/);
 });
 
 test("authenticated accounts can delete a shared patient by id", async () => {
@@ -125,7 +125,14 @@ test("malformed responses and transport errors cannot become an empty successful
     Response.json({message: "permission denied", code: "42501"}, {status: 403}),
   );
 
-  await assert.rejects(failed.remote.list(), /permission denied/);
+  await assert.rejects(failed.remote.list(), (error: unknown) => {
+    assert.ok(error instanceof Error);
+    assert.match(error.message, /No se pudieron cargar los pacientes/);
+    assert.doesNotMatch(error.message, /permission denied|42501/);
+    assert.ok(error.cause);
+
+    return true;
+  });
 });
 
 test("patients already readable in the database are not silently hidden after upgrading", async () => {
@@ -185,4 +192,25 @@ test("anonymous requests cannot read, save or delete shared patients", async () 
   await assert.rejects(remote.save(patient), /Iniciá sesión/);
   await assert.rejects(remote.remove(patient.id), /Iniciá sesión/);
   assert.equal(requests, 0);
+});
+
+test("one historical empty name does not hide the entire patient list", async () => {
+  const historical = [
+    {...patient, id: crypto.randomUUID(), full_name: "Paciente existente"},
+    {...patient, id: crypto.randomUUID(), full_name: ""},
+    {...patient, id: crypto.randomUUID(), full_name: null},
+    {...patient, id: crypto.randomUUID(), full_name: "   "},
+  ];
+  const {remote} = setup(async (input) => {
+    const url = new URL(String(input));
+
+    return Response.json(url.searchParams.has("id") ? [] : historical);
+  });
+  const rows = await remote.list();
+
+  assert.equal(rows.length, historical.length);
+  assert.equal(rows[0].full_name, "Paciente existente");
+  assert.equal(rows[1].full_name, "");
+  assert.equal(rows[2].full_name, "");
+  assert.equal(rows[3].full_name, "   ");
 });

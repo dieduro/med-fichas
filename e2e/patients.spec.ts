@@ -50,7 +50,11 @@ test("patient navigation, durable edits and reload work offline; reconnect sends
   context,
 }) => {
   let activeUser = user;
-  const records = new Map([[patient.id, patient]]);
+  const unnamed = {...patient, id: "c507b775-00d5-49ba-9a0d-46823d0f2c74", full_name: ""};
+  const records = new Map([
+    [patient.id, patient],
+    [unnamed.id, unnamed],
+  ]);
   const writes: Record<string, unknown>[] = [];
 
   await context.route("https://patients.example.test/**", async (route) => {
@@ -85,6 +89,12 @@ test("patient navigation, durable edits and reload work offline; reconnect sends
   await context.addCookies([sessionCookie(user)]);
   await page.reload();
   await expect(page.getByRole("link", {name: patient.full_name, exact: true})).toBeVisible();
+  await expect(page.getByRole("link", {name: "Paciente sin nombre", exact: true})).toBeVisible();
+  await page.getByRole("link", {name: "Paciente sin nombre", exact: true}).click();
+  await expect(page.getByLabel("Nombre", {exact: true})).toHaveValue("");
+  await expect(page.getByLabel("Historia clínica")).toHaveValue(patient.notes);
+  expect(records.get(unnamed.id)?.full_name).toBe("");
+  await page.getByRole("link", {name: "Volver", exact: true}).click();
 
   await context.setOffline(true);
   await page.getByRole("button", {name: "Nuevo Paciente", exact: true}).first().click();
@@ -110,6 +120,14 @@ test("patient navigation, durable edits and reload work offline; reconnect sends
   await expect.poll(() => writes.length).toBe(1);
   expect(writes[0]).toMatchObject({id, notes: "Edición final", user_id: "system"});
 
+  await page.getByRole("link", {name: "Volver", exact: true}).click();
+  await page.getByRole("link", {name: "Paciente sin nombre", exact: true}).click();
+  await page.getByLabel("Nombre", {exact: true}).fill("Paciente recuperado");
+  await page.getByRole("button", {name: "Guardar", exact: true}).click();
+  await expect.poll(() => records.get(unnamed.id)?.full_name).toBe("Paciente recuperado");
+  await page.getByRole("link", {name: "Volver", exact: true}).click();
+  await expect(page.getByRole("link", {name: "Paciente recuperado", exact: true})).toBeVisible();
+
   await page.getByRole("button", {name: "Logout", exact: true}).click();
   await expect(page).toHaveURL(/\/login$/);
   await page.goto("/");
@@ -127,4 +145,42 @@ test("patient navigation, durable edits and reload work offline; reconnect sends
   await page.reload();
   await expect(page.getByRole("link", {name: patient.full_name, exact: true})).toBeVisible();
   await expect(page.getByRole("link", {name: "Paciente offline", exact: true})).toBeVisible();
+});
+
+test("unreadable responses show a friendly retry instead of JSON or an empty registry", async ({
+  page,
+  context,
+}) => {
+  let corrected = false;
+
+  await context.route("https://patients.example.test/**", async (route) => {
+    const url = new URL(route.request().url());
+
+    if (url.pathname === "/auth/v1/user") return route.fulfill({json: user});
+
+    return route.fulfill({
+      json: url.searchParams.has("id")
+        ? []
+        : [{...patient, id: corrected ? patient.id : "invalid-id"}],
+    });
+  });
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)), {timeout: 15000})
+    .toBe(true);
+  await context.addCookies([sessionCookie(user)]);
+  await page.reload();
+  await expect(
+    page.getByText(
+      "No se pudieron cargar los pacientes porque algunos datos tienen un formato incompatible.",
+      {exact: true},
+    ),
+  ).toBeVisible();
+  await expect(page.getByText("No hay pacientes registrados", {exact: true})).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText('"code"');
+  await expect(page.locator("body")).not.toContainText("invalid-id");
+  corrected = true;
+  await page.getByRole("button", {name: "Reintentar", exact: true}).click();
+  await expect(page.getByRole("link", {name: patient.full_name, exact: true})).toBeVisible();
+  await expect(page.getByRole("button", {name: "Reintentar", exact: true})).toHaveCount(0);
 });
