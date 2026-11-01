@@ -1,6 +1,6 @@
 # Patient storage and rollout
 
-The patient module owns the local cache, pending changes and synchronization. Screens use `usePatients()` and call the module; they do not read Supabase or IndexedDB directly.
+All authenticated accounts share the same patient registry. The patient module owns the local cache, pending changes and synchronization. Screens use `usePatients()` and call the module; they do not read Supabase or IndexedDB directly.
 
 ```text
 screens → PatientsProvider → patient module
@@ -20,24 +20,22 @@ screens → PatientsProvider → patient module
 - Clearing the cache removes only rows without pending changes. It never clears the outbox or deletes server records.
 - The service worker caches the app shell and static assets. Patient records and the current identity are loaded in the browser. Auth callbacks and Supabase requests are not cached. The root shell is precached and serves patient and admin navigation, including patient URLs not visited before. Native document navigation avoids server-dependent router requests while offline. Installation and sign-in still require a connection.
 
-## Existing data: review before deployment
+## Existing data and access policies
 
-The previous version writes `user_id = 'system'` and uses a shared `MedFichasDB` database plus an `offlinePatients` localStorage key. Those values do not identify the owner. Automatically attributing them to whichever account signs in would mix accounts.
+Patient records are shared across authenticated accounts. `user_id` is a historical storage field, not a record owner or a read filter. Reads include legacy `system` rows, null values and records written with an account ID during the previous refactor. Saves keep the shared `system` marker for compatibility with the existing schema. There is no ownership mapping or bulk patient update to run.
 
-New databases use `MedFichasDB:user:<authenticated-user-id>`. The old database and localStorage are left untouched. The admin screen can export both stores, including the old queue, for manual recovery. That export contains clinical information and must be stored privately. It is not imported automatically or uploaded anywhere.
+Offline caches still use `MedFichasDB:user:<authenticated-user-id>`. This keeps session cleanup and pending edits separate on a device; it does not restrict which remote patients an account can see. Logging out stops that account's module and hides its cache. Another authenticated account downloads the same shared remote records into its own cache.
 
-Before deploying to an existing Supabase project:
+The old `MedFichasDB` database and `offlinePatients` localStorage key are left untouched. The admin screen can export both stores, including the old queue, for manual recovery. The export contains clinical information and must be stored privately. Old pending work is not replayed automatically over newer remote records.
 
-1. Back up the `patients` table and export local legacy data from each device with unsent edits.
-2. Inspect the existing `patients` schema and RLS policies. The current patient fields are `id`, `full_name`, `email`, `phone_number`, `gender`, `dob`, `notes`, `health_insurance`, and `user_id`. Patient IDs are UUIDs. Empty optional dates and genders are sent as SQL nulls.
-3. Review which authenticated user owns each legacy remote row. Prepare and review an explicit row-to-user mapping. Do not bulk assign shared records to the current user. Reconcile legacy pending edits against the backed-up remote records before importing them for their verified owner.
-4. Apply that reviewed ownership mapping and then `src/scripts/patient-owner-policies.sql` through the project's migration process. This repository does not execute either step automatically. Unassigned rows remain in Supabase but are hidden from the new application.
-5. Verify with two real accounts: each can list, create, edit and delete its own rows; neither can read or modify the other's rows, including by supplying a known ID. Verify anonymous requests are denied. Also verify reconnection after an expired session.
-6. Deploy the application. Revisit the PWA online to install the new app shell before testing offline navigation.
+Before deployment:
 
-The policy script adds an owner policy and a restrictive owner scope. The restrictive scope also constrains older permissive policies, including old policies allowing `system`. It enables RLS and adds the optional insurance column if absent. It does not delete rows, reassign ownership, or run in the application. Existing server-side administrative jobs that use ordinary authenticated sessions must satisfy the owner policy too.
+1. Inspect the existing schema and RLS policies. The fields are `id`, `full_name`, `email`, `phone_number`, `gender`, `dob`, `notes`, `health_insurance`, and `user_id`. Patient IDs are UUIDs. Empty optional dates and genders are sent as SQL nulls.
+2. If the earlier `patient-owner-policies.sql` migration was applied, review and apply `src/scripts/patient-shared-policies.sql`. The script removes the two known owner policies and grants shared access to authenticated accounts. A restrictive authenticated-session policy blocks anonymous access even alongside old permissive policies. It preserves every patient row and its existing `user_id`. Other custom restrictive policies must be reviewed separately if they still limit reads.
+3. Verify with two authenticated accounts that both can list and edit the same legacy and new patients. Verify anonymous requests are denied. Verify an expired or changed session cannot keep synchronizing the previous account's pending changes.
+4. Revisit the PWA online to install the new shell before testing offline navigation. Export old local caches from devices with unsent legacy edits and reconcile them with the current shared records before manual recovery.
 
-Application code can be rolled back. Ownership and policy changes require a separately reviewed database rollback. Keep backups and exports until migration and offline recovery have been verified.
+SQL migrations are not executed by the application or its tests. Database policy changes should be applied through the project's reviewed migration process. Keep backups and exports until offline recovery has been verified.
 
 ## Verification
 

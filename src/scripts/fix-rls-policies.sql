@@ -1,5 +1,5 @@
 -- Read-only inspection. Do not disable RLS to work around synchronization errors.
--- For the reviewed owner-policy migration see patient-owner-policies.sql
+-- For the reviewed shared-policy migration see patient-shared-policies.sql
 -- and docs/patient-storage.md.
 SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
 FROM pg_policies
