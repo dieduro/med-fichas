@@ -6,14 +6,7 @@ import {ZodError} from "zod";
 
 import {usePatients} from "./providers/PatientsProvider";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import {Card, CardHeader, CardDescription, CardContent, CardFooter} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {
@@ -28,7 +21,7 @@ import {Button, buttonVariants} from "@/components/ui/button";
 import {patientDraftSchema, type Patient} from "@/types/Patient";
 
 const PatientForm = ({patient: initialPatient}: {patient: Patient | undefined}) => {
-  const [patient, setSavedPatient] = useState(initialPatient);
+  const [patient, setPatient] = useState(initialPatient);
   const {module} = usePatients();
   const [patientId, setPatientId] = useState(patient?.id);
   const [isSaving, setIsSaving] = useState(false);
@@ -43,7 +36,7 @@ const PatientForm = ({patient: initialPatient}: {patient: Patient | undefined}) 
       const saved = await module.save(draft, patientId);
 
       setPatientId(saved.id);
-      setSavedPatient(saved);
+      setPatient(saved);
       toast.success(
         "Paciente guardado en este dispositivo. Los cambios se sincronizan al conectar.",
         {id: toastId},
@@ -63,97 +56,126 @@ const PatientForm = ({patient: initialPatient}: {patient: Patient | undefined}) 
   };
 
   return (
-    <Card className="w-full max-w-3xl">
-      <CardHeader>
-        <CardTitle>Información del paciente</CardTitle>
-        <CardDescription>Completar el formulario con la información del paciente</CardDescription>
+    <Card className="w-full min-w-0 max-w-3xl">
+      <CardHeader className="p-4 sm:p-6">
+        <h1 className="break-words text-2xl font-semibold tracking-tight">
+          {patient ? patient.full_name.trim() || "Ficha del paciente" : "Nuevo paciente"}
+        </h1>
+        <CardDescription>
+          Solo el nombre es obligatorio. Podés completar el resto después.
+        </CardDescription>
       </CardHeader>
       <form
+        className="[&_input]:h-11 [&_input]:min-w-0 [&_input]:max-w-full [&_input]:text-base md:[&_input]:text-sm"
         onSubmit={(event) => {
           event.preventDefault();
           void handleFormAction(new FormData(event.currentTarget));
         }}
       >
-        <CardContent className="grid gap-6">
-          {/* Hidden input for patient ID */}
+        <CardContent className="grid min-w-0 gap-8 px-4 pb-6 pt-0 sm:px-6">
           <input name="id" type="hidden" value={patientId || ""} />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <fieldset className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+            <legend className="mb-4 text-base font-semibold">Datos personales</legend>
+            <div className="min-w-0 space-y-2 sm:col-span-2">
               <Label htmlFor="full_name">Nombre</Label>
               <Input
                 required
+                autoComplete="name"
                 defaultValue={patient?.full_name || ""}
                 id="full_name"
                 name="full_name"
-                placeholder="Nombre del paciente"
+                placeholder="Nombre y apellido"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                defaultValue={patient?.email || ""}
-                id="email"
-                name="email"
-                placeholder="Email del paciente"
-                type="email"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone_number">Teléfono</Label>
-              <Input
-                defaultValue={patient?.phone_number || ""}
-                id="phone_number"
-                name="phone_number"
-                placeholder="Teléfono del paciente"
-              />
-            </div>
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="dob">Fecha de nacimiento</Label>
-              <Input defaultValue={patient?.dob || ""} id="dob" name="dob" type="date" />
+              <Input
+                autoComplete="bday"
+                defaultValue={patient?.dob || ""}
+                id="dob"
+                name="dob"
+                type="date"
+              />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="gender">Género</Label>
               <Select defaultValue={patient?.gender || ""} name="gender">
-                <SelectTrigger>
+                <SelectTrigger className="h-11 text-base md:text-sm" id="gender">
                   <SelectValue placeholder="Seleccionar género" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male">Masculino</SelectItem>
-                  <SelectItem value="female">Femenino</SelectItem>
-                  <SelectItem value="other">Otro</SelectItem>
+                  <SelectItem className="min-h-11" value="male">
+                    Masculino
+                  </SelectItem>
+                  <SelectItem className="min-h-11" value="female">
+                    Femenino
+                  </SelectItem>
+                  <SelectItem className="min-h-11" value="other">
+                    Otro
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+          </fieldset>
+          <fieldset className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+            <legend className="mb-4 text-base font-semibold">Contacto y cobertura</legend>
+            <div className="min-w-0 space-y-2">
+              <Label htmlFor="phone_number">Teléfono</Label>
+              <Input
+                autoComplete="tel"
+                defaultValue={patient?.phone_number || ""}
+                id="phone_number"
+                name="phone_number"
+                placeholder="Código de área y número"
+                type="tel"
+              />
+            </div>
+            <div className="min-w-0 space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                autoCapitalize="none"
+                autoComplete="email"
+                defaultValue={patient?.email || ""}
+                id="email"
+                name="email"
+                placeholder="nombre@ejemplo.com"
+                type="email"
+              />
+            </div>
+            <div className="min-w-0 space-y-2 sm:col-span-2">
               <Label htmlFor="health_insurance">Obra Social</Label>
               <Input
                 defaultValue={patient?.health_insurance || ""}
                 id="health_insurance"
                 name="health_insurance"
-                placeholder="Obra Social del paciente"
+                placeholder="Nombre de la obra social o prepaga"
               />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="notes">Historia clínica</Label>
+          </fieldset>
+          <div className="min-w-0 space-y-2">
+            <Label className="text-base font-semibold" htmlFor="notes">
+              Historia clínica
+            </Label>
             <Textarea
-              className="min-h-[200px]"
+              className="min-h-64 resize-y text-base leading-relaxed md:text-sm"
               defaultValue={patient?.notes || ""}
               id="notes"
               name="notes"
-              placeholder="Ingresar información clínica relevante"
+              placeholder="Antecedentes, consultas y evolución del paciente"
             />
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end gap-4">
-          <a className={buttonVariants({variant: "secondary"})} href="/">
+        <CardFooter className="sticky bottom-0 z-10 flex gap-3 rounded-b-lg border-t bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:justify-end sm:px-6 sm:pb-6">
+          <a
+            className={buttonVariants({
+              className: "h-11 flex-1 sm:flex-none",
+              variant: "secondary",
+            })}
+            href="/"
+          >
             Volver
           </a>
-          <Button disabled={isSaving || !module} type="submit">
+          <Button className="h-11 flex-1 sm:flex-none" disabled={isSaving || !module} type="submit">
             {isSaving ? "Guardando..." : "Guardar"}
           </Button>
         </CardFooter>
