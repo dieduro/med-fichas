@@ -184,3 +184,60 @@ test("unreadable responses show a friendly retry instead of JSON or an empty reg
   await expect(page.getByRole("link", {name: patient.full_name, exact: true})).toBeVisible();
   await expect(page.getByRole("button", {name: "Reintentar", exact: true})).toHaveCount(0);
 });
+
+test("mobile list supports accented search, insurance search and clear without losing navigation", async ({
+  page,
+  context,
+}) => {
+  const mobilePatient = {...patient, full_name: "María González", health_insurance: "OSDE"};
+
+  await context.route("https://patients.example.test/**", async (route) => {
+    const url = new URL(route.request().url());
+
+    if (url.pathname === "/auth/v1/user") return route.fulfill({json: user});
+
+    return route.fulfill({json: url.searchParams.has("id") ? [] : [mobilePatient]});
+  });
+  await page.setViewportSize({width: 390, height: 844});
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)), {timeout: 15000})
+    .toBe(true);
+  await context.addCookies([sessionCookie(user)]);
+  await page.reload();
+  const patientLink = page.getByRole("link", {name: mobilePatient.full_name, exact: true});
+  const search = page.getByRole("searchbox", {name: "Buscar pacientes por nombre u obra social"});
+
+  await expect(patientLink).toBeVisible();
+  for (const width of [320, 390, 768, 1280]) {
+    await page.setViewportSize({width, height: 844});
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    if (width < 640) {
+      const bounds = await patientLink.boundingBox();
+
+      expect(bounds?.height).toBeGreaterThanOrEqual(64);
+      expect(bounds?.x).toBeLessThanOrEqual(30);
+      await expect(page.getByRole("columnheader", {name: "Obra Social"})).toBeHidden();
+    } else {
+      await expect(page.getByRole("columnheader", {name: "Obra Social"})).toBeVisible();
+    }
+  }
+  await page.setViewportSize({width: 390, height: 844});
+  await search.fill("  maria gonzalez  ");
+  await expect(patientLink).toBeVisible();
+  await search.press("Enter");
+  await expect(search).toHaveValue("  maria gonzalez  ");
+  await search.fill("osde");
+  await expect(patientLink).toBeVisible();
+  await search.fill("sin coincidencias");
+  await expect(page.getByRole("heading", {name: "No encontramos pacientes"})).toBeVisible();
+  await expect(patientLink).toHaveCount(0);
+  await page.getByRole("button", {name: "Limpiar búsqueda"}).click();
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue("");
+  await expect(patientLink).toBeVisible();
+  await patientLink.click();
+  await expect(page.getByLabel("Nombre", {exact: true})).toHaveValue(mobilePatient.full_name);
+});

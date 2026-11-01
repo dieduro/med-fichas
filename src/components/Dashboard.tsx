@@ -1,10 +1,9 @@
 "use client";
 
-import React, {useState} from "react";
-import {Settings, Plus} from "lucide-react";
+import React, {useRef, useState} from "react";
+import {Settings, Plus, X} from "lucide-react";
 
 import PatientsList from "./PatientsList";
-import PackageIcon from "./svg/Package";
 import SearchIcon from "./svg/Search";
 import {SubtleOfflineIndicator} from "./ui/SubtleOfflineIndicator";
 import {usePatients} from "./providers/PatientsProvider";
@@ -15,6 +14,7 @@ import {Button} from "@/components/ui/button";
 const Dashboard = () => {
   const {patients, ready, status, error, module, isSyncing} = usePatients();
   const [searchValue, setSearchValue] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const loadingPatients = !ready || (isSyncing && patients.length === 0 && !error);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,29 +26,41 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex h-16 items-center justify-between border-b bg-muted/40 px-6">
-        <div className="flex items-center gap-4">
-          <a className="flex items-center gap-2 font-semibold" href="/">
-            <PackageIcon className="h-6 w-6" />
-            <span className="sr-only">Medical App</span>
-          </a>
-          <form className="relative flex-1">
-            <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="w-full pl-8"
-              placeholder="Buscar..."
-              type="search"
-              onChange={handleSearchChange}
-            />
-          </form>
-        </div>
-        <div className="flex items-center gap-4">
-          <a href="/admin">
-            <Button size="icon" title="Admin Settings" variant="ghost">
-              <Settings className="h-5 w-5" />
+    <div className="-mx-4 flex flex-col sm:mx-0">
+      <header className="flex items-center gap-3 border-b py-4 sm:px-6">
+        <div aria-label="Buscar pacientes" className="relative min-w-0 flex-1" role="search">
+          <SearchIcon className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            ref={searchRef}
+            aria-label="Buscar pacientes por nombre u obra social"
+            autoComplete="off"
+            className="h-11 w-full pl-9 pr-11 text-base md:text-sm [&::-webkit-search-cancel-button]:appearance-none"
+            placeholder="Nombre u obra social"
+            type="search"
+            value={searchValue}
+            onChange={handleSearchChange}
+          />
+          {searchValue ? (
+            <Button
+              aria-label="Limpiar búsqueda"
+              className="absolute right-0 top-0 h-11 w-11"
+              size="icon"
+              variant="ghost"
+              onClick={() => {
+                setSearchValue("");
+                searchRef.current?.focus();
+              }}
+            >
+              <X aria-hidden="true" className="h-4 w-4" />
             </Button>
-          </a>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+          <Button asChild className="h-11 w-11" size="icon" variant="ghost">
+            <a aria-label="Configuración" href="/admin">
+              <Settings aria-hidden="true" className="h-5 w-5" />
+            </a>
+          </Button>
           <SubtleOfflineIndicator />
           <Button
             className="hidden md:flex"
@@ -59,11 +71,13 @@ const Dashboard = () => {
           </Button>
         </div>
       </header>
-      <main className="relative grid flex-1 p-6">
+      <main className="relative min-w-0 flex-1 pb-28 pt-6 sm:px-6 md:pb-6">
         {status === "signed-out" ? (
           <a href="/login">Iniciá sesión para ver tus pacientes</a>
         ) : loadingPatients ? (
-          <p>Cargando pacientes...</p>
+          <p aria-live="polite" role="status">
+            Cargando pacientes...
+          </p>
         ) : (
           <div>
             {error ? (
@@ -87,7 +101,7 @@ const Dashboard = () => {
         )}
 
         <Button
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full p-0 shadow-lg md:hidden"
+          className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-6 z-40 h-14 w-14 rounded-full p-0 shadow-lg md:hidden"
           disabled={status !== "authenticated"}
           size="icon"
           onClick={createNewPatient}
