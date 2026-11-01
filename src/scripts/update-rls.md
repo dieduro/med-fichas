@@ -1,3 +1,3 @@
 # Updating patient storage
 
-See [the patient storage rollout](../../docs/patient-storage.md). The new module writes the authenticated user's ID and preserves the old shared cache for manual export. The owner-policy migration must follow an explicit review of legacy row ownership.
+See [the patient storage rollout](../../docs/patient-storage.md). Patients are shared across authenticated accounts. The shared-policy migration replaces the earlier owner-only policies without reassigning or deleting any patient rows.

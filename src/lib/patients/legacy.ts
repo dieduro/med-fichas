@@ -1,6 +1,6 @@
 import Dexie from "dexie";
 
-// Ownership of the old shared cache cannot be inferred from the current session.
+// Preserve the legacy cache for explicit recovery instead of replaying its old queue automatically.
 export async function readLegacyPatients() {
   let patients: unknown[] = [];
   let pendingChanges: unknown[] = [];

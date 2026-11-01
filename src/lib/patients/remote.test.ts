@@ -19,7 +19,7 @@ const patient: Patient = {
   health_insurance: "",
 };
 
-function setup(fetch: typeof globalThis.fetch) {
+function setup(fetch: typeof globalThis.fetch, accountId = userId) {
   const client = createClient("https://patients.example.test", "public-test-key", {
     global: {fetch},
     auth: {persistSession: false, autoRefreshToken: false, detectSessionInUrl: false},
@@ -28,7 +28,7 @@ function setup(fetch: typeof globalThis.fetch) {
   client.auth.getUser = async () => ({
     data: {
       user: {
-        id: userId,
+        id: accountId,
         app_metadata: {},
         user_metadata: {},
         aud: "authenticated",
@@ -38,10 +38,10 @@ function setup(fetch: typeof globalThis.fetch) {
     error: null,
   });
 
-  return {client, remote: patientRemote(client, userId)};
+  return {client, remote: patientRemote(client, accountId)};
 }
 
-test("remote reads filter by owner and paginate until empty, normalizing nullable columns", async () => {
+test("shared remote reads paginate until empty, normalizing nullable columns", async () => {
   const requests: URL[] = [];
   const {remote} = setup(async (input) => {
     const url = new URL(String(input));
@@ -57,11 +57,11 @@ test("remote reads filter by owner and paginate until empty, normalizing nullabl
 
   assert.deepEqual(await remote.list(), [patient]);
   assert.equal(requests.length, 2);
-  assert.ok(requests.every((url) => url.searchParams.get("user_id") === `eq.${userId}`));
+  assert.ok(requests.every((url) => !url.searchParams.has("user_id")));
   assert.equal(requests[1].searchParams.get("id"), `gt.${patient.id}`);
 });
 
-test("remote saves use the authenticated owner and require confirmation", async () => {
+test("remote saves retain the shared system marker and require confirmation", async () => {
   let body: unknown;
   const {remote} = setup(async (_input, init) => {
     body = JSON.parse(String(init?.body));
@@ -70,13 +70,13 @@ test("remote saves use the authenticated owner and require confirmation", async 
   });
 
   await remote.save(patient);
-  assert.deepEqual(body, {...patient, dob: null, user_id: userId});
+  assert.deepEqual(body, {...patient, dob: null, user_id: "system"});
   const denied = setup(async () => Response.json(null));
 
   await assert.rejects(denied.remote.save(patient), /no confirmó/);
 });
 
-test("remote deletes filter both patient and owner", async () => {
+test("authenticated accounts can delete a shared patient by id", async () => {
   let requested = "";
   const {remote} = setup(async (input) => {
     requested = String(input);
@@ -88,7 +88,7 @@ test("remote deletes filter both patient and owner", async () => {
   const url = new URL(requested);
 
   assert.equal(url.searchParams.get("id"), `eq.${patient.id}`);
-  assert.equal(url.searchParams.get("user_id"), `eq.${userId}`);
+  assert.equal(url.searchParams.has("user_id"), false);
 });
 
 test("a changed or expired session cannot send requests for the previous account", async () => {
@@ -126,4 +126,63 @@ test("malformed responses and transport errors cannot become an empty successful
   );
 
   await assert.rejects(failed.remote.list(), /permission denied/);
+});
+
+test("patients already readable in the database are not silently hidden after upgrading", async () => {
+  const legacy = {...patient, user_id: "system"};
+  const {remote} = setup(async (input) => {
+    const url = new URL(String(input));
+    // The transport models a legacy row already authorized by the database's RLS.
+    const filter = url.searchParams.get("user_id");
+    const rows = !url.searchParams.has("id") && (!filter || filter === "eq.system") ? [legacy] : [];
+
+    return Response.json(rows);
+  });
+  const rows = await remote.list();
+
+  assert.equal(rows.length, 1, "the existing patient disappeared from the authenticated list");
+});
+
+test("different authenticated accounts see the same historical and recent patients", async () => {
+  const shared = [
+    {...patient, user_id: "system"},
+    {...patient, id: crypto.randomUUID(), user_id: null},
+    {...patient, id: crypto.randomUUID(), user_id: userId},
+  ];
+  const transport: typeof globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    const filter = url.searchParams.get("user_id");
+
+    return Response.json(
+      url.searchParams.has("id")
+        ? []
+        : shared.filter((row) => !filter || filter === `eq.${row.user_id}`),
+    );
+  };
+  const first = setup(transport);
+  const second = setup(transport, crypto.randomUUID());
+  const expected = shared.map(({user_id: _owner, ...record}) => record);
+
+  assert.deepEqual(await first.remote.list(), expected);
+  assert.deepEqual(await second.remote.list(), expected);
+});
+
+test("anonymous requests cannot read, save or delete shared patients", async () => {
+  let requests = 0;
+  const client = createClient("https://patients.example.test", "public-test-key", {
+    global: {
+      fetch: async () => {
+        requests++;
+
+        return Response.json([]);
+      },
+    },
+    auth: {persistSession: false, autoRefreshToken: false, detectSessionInUrl: false},
+  });
+  const remote = patientRemote(client, userId);
+
+  await assert.rejects(remote.list(), /Iniciá sesión/);
+  await assert.rejects(remote.save(patient), /Iniciá sesión/);
+  await assert.rejects(remote.remove(patient.id), /Iniciá sesión/);
+  assert.equal(requests, 0);
 });

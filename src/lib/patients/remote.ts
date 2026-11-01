@@ -48,12 +48,7 @@ export function patientRemote(client: SupabaseClient, userId: string): PatientRe
       let lastId: string | undefined;
 
       while (true) {
-        let query = client
-          .from("patients")
-          .select("*")
-          .eq("user_id", userId)
-          .order("id")
-          .limit(500);
+        let query = client.from("patients").select("*").order("id").limit(500);
 
         if (lastId) query = query.gt("id", lastId);
         const {data, error} = await query;
@@ -77,7 +72,7 @@ export function patientRemote(client: SupabaseClient, userId: string): PatientRe
           ...patient,
           dob: patient.dob || null,
           gender: patient.gender || null,
-          user_id: userId,
+          user_id: "system",
         })
         .select("id")
         .single();
@@ -87,7 +82,7 @@ export function patientRemote(client: SupabaseClient, userId: string): PatientRe
     },
     async remove(id) {
       await verifySession();
-      const {error} = await client.from("patients").delete().eq("id", id).eq("user_id", userId);
+      const {error} = await client.from("patients").delete().eq("id", id);
 
       if (error) throw new Error(error.message);
     },

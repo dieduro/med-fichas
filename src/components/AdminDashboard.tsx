@@ -82,7 +82,7 @@ const AdminDashboard: React.FC = () => {
               Exportar datos de la versión anterior
             </Button>
             <p className="mt-2 text-sm text-muted-foreground">
-              Los datos anteriores se conservan separados porque no identifican a su propietario. La
+              El caché anterior se conserva como respaldo para recuperar cambios pendientes. La
               exportación incluye historias clínicas: guardala en un lugar privado.
             </p>
           </CardContent>

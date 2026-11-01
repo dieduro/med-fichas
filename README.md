@@ -18,7 +18,7 @@ Med-Fichas is a modern web application built with Next.js for managing medical p
 - **UI Components**: Custom components built with Radix UI primitives
 - **Database**: [Supabase](https://supabase.com/) for data storage and authentication
 - **Language**: TypeScript
-- **Patient Storage**: Account-scoped IndexedDB with authenticated Supabase synchronization
+- **Patient Storage**: Per-account offline caches with shared authenticated Supabase records
 
 ## Project Structure
 
